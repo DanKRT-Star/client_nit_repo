@@ -1,5 +1,7 @@
+import Card from "./Card"
 
 function App() {
+  const names = ["Fast", "Flexible", "Modern"]
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -15,38 +17,11 @@ function App() {
 
         {/* Card Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {/* Card 1 */}
-          <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Fast</h3>
-            <p className="text-gray-600">Tốc độ phát triển nhanh với utility classes</p>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-            <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Flexible</h3>
-            <p className="text-gray-600">Linh hoạt và dễ dàng tùy chỉnh theo nhu cầu</p>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-            <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Modern</h3>
-            <p className="text-gray-600">Thiết kế hiện đại với responsive design</p>
-          </div>
+          {
+            names.map((name) => (
+              <Card name={name} />
+            ))
+          }
         </div>
 
         {/* Button Group */}
