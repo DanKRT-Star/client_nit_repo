@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import Card from "./Card"
 
 function App() {
@@ -25,7 +26,7 @@ function App() {
         </div>
 
         {/* Button Group */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Buttons Demo</h2>
           <div className="flex flex-wrap gap-4">
             <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
@@ -44,6 +45,17 @@ function App() {
               Outline
             </button>
           </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Navigation</h2>
+          <Link
+            to="/test"
+            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
+          >
+            Đi đến trang Test →
+          </Link>
         </div>
       </div>
     </div>
