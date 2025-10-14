@@ -1,0 +1,48 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Nguyễn Văn A",
+      "email": "a@example.com",
+      "age": 25
+    },
+    {
+      "id": 2,
+      "name": "Trần Thị B",
+      "email": "b@example.com",
+      "age": 30
+    },
+    {
+      "id": 3,
+      "name": "Trần Thị C",
+      "email": "c@example.vn",
+      "age": 30
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "Laptop Dell",
+      "price": 15000000,
+      "category": "electronics"
+    },
+    {
+      "id": 2,
+      "name": "iPhone 15",
+      "price": 25000000,
+      "category": "electronics"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Electronics",
+      "description": "Thiết bị điện tử"
+    },
+    {
+      "id": 2,
+      "name": "Books",
+      "description": "Sách và tài liệu"
+    }
+  ]
+}
