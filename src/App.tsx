@@ -1,8 +1,17 @@
+import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import Card from "./Card"
+import { userApi } from "./pages/api"
 
 function App() {
   const names = ["Fast", "Flexible", "Modern"]
+  const fetchUsers = async () => {
+    const response = await userApi.getAll()
+    console.log(response.data)
+  }
+  useEffect(() => {
+    fetchUsers()
+  }, [])
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
@@ -18,11 +27,9 @@ function App() {
 
         {/* Card Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {
-            names.map((name) => (
-              <Card name={name} />
-            ))
-          }
+          {names.map((name, index) => (
+            <Card key={index} name={name} />
+          ))}
         </div>
 
         {/* Button Group */}

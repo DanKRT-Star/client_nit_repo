@@ -58,7 +58,7 @@ Thêm script vào `package.json`:
 ```javascript
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = 'http://localhost:3002';
 
 // Tạo instance axios với cấu hình mặc định
 const api = axios.create({
@@ -107,7 +107,7 @@ function UserList() {
   // useEffect để fetch data khi component mount
   useEffect(() => {
     fetchUsers();
-  }, []); // Empty dependency array = chỉ chạy 1 lần
+  }, [users]); // Empty dependency array = chỉ chạy 1 lần
 
   const fetchUsers = async () => {
     try {
@@ -205,7 +205,11 @@ import './App.css';
 
 function App() {
   // State management
+  /**
+   * user rỗng => table rỗng => user có data (từ api) => |state thay doi => cap nhat UI moi => render UI => UI lag => có cách tránh rerender UI khi state update|
+  */
   const [users, setUsers] = useState([]);
+  const user = []; => js => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
@@ -220,7 +224,17 @@ function App() {
   // 1. READ - Fetch users khi component mount
   useEffect(() => {
     fetchUsers();
-  }, []);
+
+  }, return () => {} }, [params]);
+
+  useEffect()=> {
+
+    alert thong bao có bao nhiêu user trong hệ thống
+  }, [users]
+
+  /**
+   * params trong useEffect => bất kỳ params nào thay đổi state thì useEffect sẽ chạy lại  
+  */
 
   const fetchUsers = async () => {
     try {
@@ -249,6 +263,8 @@ function App() {
 
       // Cập nhật state với user mới
       setUsers([...users, response.data]);
+      // call api get => setUser()
+      // await fetchUsers();
 
       // Reset form
       setFormData({ name: '', email: '', age: '' });
