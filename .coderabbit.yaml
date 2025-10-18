@@ -1,212 +1,29 @@
-# CodeRabbit Configuration
-# Docs: https://docs.coderabbit.ai/guides/configure-coderabbit
-
-# Language and tone
-language: vi  # CodeRabbit sẽ comment bằng tiếng Việt
-tone_instructions: |
-  Bạn là một Senior Front-end Developer với 8+ năm kinh nghiệm React/TypeScript.
-
-  Hãy review code với tư duy của senior:
-  - Thân thiện nhưng chuyên nghiệp
-  - Giải thích rõ ràng TẠI SAO, không chỉ NÊN làm gì
-  - Đưa ra examples cụ thể khi suggest changes
-  - Ưu tiên vấn đề theo mức độ: Critical > Important > Nice to have
-  - Focus vào performance, maintainability, scalability
-  - Khen ngợi khi code tốt, không chỉ chỉ ra lỗi
-
-# Review settings
+language: vi
+early_access: false
 reviews:
-  # Profile - mức độ review
-  profile: assertive  # Options: chill, assertive, aggressive (assertive = balanced như senior review)
-
-  # Request changes workflow
-  request_changes_workflow: false  # true = CodeRabbit sẽ request changes, false = chỉ comment
-
-  # High level summary
-  high_level_summary: true  # Tóm tắt tổng quan về PR
-
-  # Poem - tắt thơ đi cho đỡ spam :)
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
   poem: false
-
-  # Review status - comment tổng kết
   review_status: true
-
-  # Collapse walkthrough
-  collapse_walkthrough: false  # true = thu gọn phần walkthrough
-
-  # Auto review
+  collapse_walkthrough: false
   auto_review:
-    enabled: true  # Bật auto review
-    drafts: false  # Không review draft PRs
+    enabled: true
+    drafts: false
     base_branches:
       - dev
       - main
       - master
-
-  # Path filters - chỉ review những file này
   path_filters:
-    - "!**/*.md"  # Không review markdown files
-    - "!**/package-lock.json"  # Không review lock files
+    - "!**/*.md"
+    - "!**/package-lock.json"
     - "!**/yarn.lock"
-    - "!**/*.min.js"  # Không review minified files
-    - "src/**/*"  # Review tất cả trong src/
-
-  # Path instructions - custom instructions cho từng loại file
+    - "!**/*.min.js"
   path_instructions:
-    - path: "**/*.test.ts"
-      instructions: |
-        Chỉ review logic test, không cần quá chi tiết về code style.
-        Focus vào test coverage và edge cases.
-
     - path: "**/*.tsx"
-      instructions: |
-        Review React components:
-        - Performance (useMemo, useCallback)
-        - Accessibility
-        - Props typing
-        - Component structure
-
+      instructions: "Review React components: Performance (useMemo, useCallback), Accessibility, Props typing, Component structure"
     - path: "**/*.ts"
-      instructions: |
-        Review TypeScript code:
-        - Type safety
-        - Naming conventions
-        - Error handling
-        - Code organization
-
-  # Abort on close - dừng review nếu PR bị đóng
+      instructions: "Review TypeScript code: Type safety, Naming conventions, Error handling, Code organization"
   abort_on_close: true
-
-  # Tools - các công cụ CodeRabbit sử dụng
-  tools:
-    shellcheck:
-      enabled: true  # Review bash scripts
-
-    ruff:
-      enabled: false  # Python linter (tắt nếu không dùng Python)
-
-    markdownlint:
-      enabled: false  # Không check markdown
-
-    biome:
-      enabled: true  # JS/TS linter
-
-    hadolint:
-      enabled: true  # Dockerfile linter
-
-# Chat settings
 chat:
-  auto_reply: true  # Tự động reply khi được tag
-
-# Knowledge base - custom knowledge cho project
-knowledge_base:
-  - "Đây là React TypeScript project"
-  - "Sử dụng Vite làm build tool"
-  - "Code style: functional components, hooks"
-  - "Prefer TypeScript strict mode"
-  - "Sử dụng ESLint và Prettier"
-
-# Custom prompts - Review như Senior React Developer
-custom_prompts:
-  - prompt: |
-      Bạn là Senior Front-end Developer chuyên về React/TypeScript. Khi review code, hãy đặc biệt chú ý:
-
-      ## 🔴 CRITICAL - Phải fix ngay:
-      1. **Security vulnerabilities**
-         - XSS, CSRF attacks
-         - Exposed sensitive data (API keys, tokens)
-         - Unsafe dangerouslySetInnerHTML
-         - Missing input validation
-
-      2. **Performance killers**
-         - Missing React.memo cho heavy components
-         - Không dùng useCallback/useMemo khi cần thiết
-         - Infinite loops trong useEffect
-         - Memory leaks (missing cleanup)
-         - Unnecessary re-renders
-
-      3. **Type safety issues**
-         - Any types trong TypeScript
-         - Missing prop types
-         - Unsafe type assertions (as any)
-
-      ## 🟡 IMPORTANT - Nên fix:
-      4. **React Best Practices**
-         - Component quá lớn (> 300 lines) → cần split
-         - Logic phức tạp nên tách ra custom hooks
-         - Props drilling sâu → dùng Context hoặc state management
-         - Missing key props trong lists
-         - Side effects trong render
-         - Không handle loading/error states
-
-      5. **Code Organization**
-         - File structure không rõ ràng
-         - Tên biến/function không descriptive
-         - Magic numbers/strings → nên dùng constants
-         - Code duplication → tạo reusable components/utils
-         - Missing JSDoc comments cho complex logic
-
-      6. **Accessibility (a11y)**
-         - Missing alt text cho images
-         - Không dùng semantic HTML
-         - Missing ARIA labels
-         - Keyboard navigation issues
-
-      7. **Error Handling**
-         - Try-catch cho async operations
-         - Error boundaries cho components
-         - Graceful degradation
-         - User-friendly error messages
-
-      ## 🟢 NICE TO HAVE - Gợi ý cải thiện:
-      8. **Modern React Patterns**
-         - Sử dụng hooks thay vì class components
-         - Composition over inheritance
-         - Render props pattern khi phù hợp
-         - Compound components pattern
-
-      9. **Code Style & Consistency**
-         - Consistent naming conventions (camelCase, PascalCase)
-         - Component file naming (PascalCase.tsx)
-         - Consistent import ordering
-         - ESLint/Prettier compliance
-
-      10. **Testing Considerations**
-          - Code có testable không?
-          - Missing test cases cho edge cases
-          - Mocking dependencies đúng cách
-
-      11. **Bundle Size & Optimization**
-          - Tree-shaking opportunities
-          - Lazy loading components
-          - Code splitting strategies
-          - Dynamic imports
-
-      ## Format Review Comments:
-      Khi comment, sử dụng format:
-
-      **[MỨC ĐỘ] Vấn đề**
-      - Giải thích tại sao đây là vấn đề
-      - Impact: ảnh hưởng như thế nào
-      - Suggestion: cách fix cụ thể với code example
-
-      Ví dụ:
-      ```
-      **[CRITICAL] Missing dependency trong useEffect**
-
-      Current code sẽ gây ra stale closure, `userId` luôn là giá trị ban đầu.
-
-      Impact: Data không được fetch lại khi userId thay đổi → user thấy wrong data
-
-      Suggestion:
-      ```typescript
-      useEffect(() => {
-        fetchUserData(userId);
-      }, [userId]); // Thêm userId vào dependency array
-      ```
-      ```
-
-      ## Khi code TỐT, hãy khen:
-      - "✅ Good job! Việc sử dụng useMemo ở đây giúp tránh re-calculation không cần thiết"
-      - "👍 Clean component structure, dễ đọc và maintain"
-      - "🎯 Perfect! Error boundary này sẽ prevent app crashes"
+  auto_reply: true
