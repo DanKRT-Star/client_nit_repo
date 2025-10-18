@@ -4,6 +4,7 @@ import Card from "./Card"
 import { userApi } from "./pages/api"
 
 function App() {
+  const test = 'hehehe'
   const names = ["Fast", "Flexible", "Modern"]
   const fetchUsers = async () => {
     const response = await userApi.getAll()
