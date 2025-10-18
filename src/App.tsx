@@ -1,10 +1,12 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import Card from "./Card"
 import { userApi } from "./pages/api"
 
 function App() {
   const names = ["Fast", "Flexible", "Modern"]
+  const [count, setCount] = useState(0)
+  
   const fetchUsers = async () => {
     const response = await userApi.getAll()
     console.log(response.data)
@@ -23,6 +25,36 @@ function App() {
           <p className="text-lg text-gray-600">
             Ví dụ về các component được styling với Tailwind
           </p>
+        </div>
+
+        {/* Counter Demo - THÊM MỚI */}
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Counter Demo</h2>
+          <div className="flex items-center justify-center gap-4">
+            <button 
+              onClick={() => setCount(count - 1)}
+              className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              -
+            </button>
+            <div className="text-4xl font-bold text-gray-800 min-w-[100px] text-center">
+              {count}
+            </div>
+            <button 
+              onClick={() => setCount(count + 1)}
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              +
+            </button>
+          </div>
+          <div className="mt-4 text-center">
+            <button 
+              onClick={() => setCount(0)}
+              className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
         {/* Card Grid */}
