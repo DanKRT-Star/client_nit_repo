@@ -1,4 +1,4 @@
-import { Link } from "react-router"
+import { Link } from "react-router-dom"
 
 interface SidebarProps {
     currentPage: string;
@@ -10,7 +10,7 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
     const NavItems = [
         { name: "Dashboard", icon: <HomeIcon /> },
         { name: "Courses", icon: <BookIcon /> },
-        { name: "Lessions", icon: <LessionIcon /> },
+        { name: "Lessons", icon: <LessonIcon /> },
         { name: "Assessments", icon: <AssessmentIcon /> },
         { name: "Challenges", icon: <ChallengeIcon /> },
         { name: "Certification", icon: <CertificateIcon /> },
@@ -121,7 +121,7 @@ function BookIcon() {
     )
 }
 
-function LessionIcon() {
+function LessonIcon() {
     return (
         <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
             <path d="M14.71 2.29A1 1 0 0 0 14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-.27-.11-.52-.29-.71zM7 7h4v2H7zm10 10H7v-2h10zm0-4H7v-2h10zm-4-4V3.5L18.5 9z"/>

@@ -86,7 +86,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
       <div className="relative flex-1 max-w-xs md:max-w-md mx-2 md:mx-10">
           <input 
             type="text" 
-            placeholder="search.." 
+            placeholder="Search.." 
+            aria-label="Search"
             className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white border-none rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
           />
           <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">
