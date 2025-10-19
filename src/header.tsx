@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 interface HeaderProps {
@@ -36,11 +36,12 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-3 md:gap-10">
         {/* Hamburger Menu Button - Chỉ hiện trên mobile */}
         <button
+          type="button"
           onClick={onMenuClick}
           className="xl:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label="Toggle menu"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-gray-800 dark:text-white" viewBox="0 0 24 24">
+          <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-gray-800 dark:text-white" viewBox="0 0 24 24">
             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
           </svg>
         </button>
@@ -48,7 +49,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
         {/* Logo */}
         <Link to={`/`} className="flex items-center gap-2">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-800 dark:bg-white rounded-lg flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" className="dark:fill-gray-800" viewBox="0 0 24 24">
+              <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" className="dark:fill-gray-800" viewBox="0 0 24 24">
                 <path d="M17.5 4.5c-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-1.45-1.1-3.55-1.5-5.5-1.5zM21 18.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
               </svg>
             </div>
@@ -89,7 +90,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
             className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white border-none rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
           />
           <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M12.9 14.32a8 8 0 111.414-1.414l4.387 4.387a1 1 0 01-1.414 1.414l-4.387-4.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z" clipRule="evenodd" />
             </svg>
           </span>
@@ -99,6 +100,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-2 md:gap-4">
         {/* Dark/Light Mode Toggle Button */}
         <button
+          type="button"
           onClick={toggleDarkMode}
           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label="Toggle dark mode"
@@ -115,7 +117,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
         </button>
 
         {/* Sign In Button */}
-        <button className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-medium px-3 md:px-6 py-2 rounded-lg transition-colors text-sm md:text-base">
+        <button type="button" className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-medium px-3 md:px-6 py-2 rounded-lg transition-colors text-sm md:text-base">
           Sign In
         </button>
       </div>

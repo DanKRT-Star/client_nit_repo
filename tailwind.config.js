@@ -8,14 +8,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Custom colors cho light mode
-        primary: {
-          DEFAULT: '#10b981', // green-500
-          dark: '#059669', // green-600
-        },
-        background: '#f9fafb', // gray-50
-        surface: '#ffffff', // white
-        // Dark mode sẽ tự động override khi có class dark:
+        primary: { DEFAULT: '#10b981', dark: '#059669' },
+        background: { DEFAULT: '#f9fafb', dark: '#0f172a' },
+        surface: { DEFAULT: '#ffffff', dark: '#1f2937' },
       },
     },
   },
