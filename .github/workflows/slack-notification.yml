@@ -15,6 +15,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare Push Notification
+        if: github.event_name == 'push'
+        id: push-data
+        run: |
+          # Escape commit message for JSON
+          COMMIT_MSG=$(echo '${{ github.event.head_commit.message }}' | jq -Rs . | sed 's/^"//;s/"$//')
+          echo "commit_message=${COMMIT_MSG}" >> $GITHUB_OUTPUT
+          echo "commit_sha_short=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+
       - name: Send Push Notification to Slack
         if: github.event_name == 'push'
         uses: slackapi/slack-github-action@v1.26.0
@@ -46,7 +55,7 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Commit:*\n`${{ github.sha }}`"
+                      "text": "*Commit:*\n`${{ steps.push-data.outputs.commit_sha_short }}`"
                     }
                   ]
                 },
@@ -54,7 +63,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Commit Message:*\n${{ toJSON(github.event.head_commit.message) }}"
+                    "text": "*Commit Message:*\n${{ steps.push-data.outputs.commit_message }}"
                   }
                 },
                 {
@@ -84,6 +93,44 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
+      - name: Determine PR Action
+        if: github.event_name == 'pull_request'
+        id: pr-data
+        run: |
+          # Determine header text based on action
+          case "${{ github.event.action }}" in
+            opened)
+              echo "header_text=:bell: New Pull Request Opened" >> $GITHUB_OUTPUT
+              ;;
+            reopened)
+              echo "header_text=:arrows_counterclockwise: Pull Request Reopened" >> $GITHUB_OUTPUT
+              ;;
+            synchronize)
+              echo "header_text=:repeat: Pull Request Updated" >> $GITHUB_OUTPUT
+              ;;
+            closed)
+              if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+                echo "header_text=:white_check_mark: Pull Request Merged" >> $GITHUB_OUTPUT
+              else
+                echo "header_text=:x: Pull Request Closed" >> $GITHUB_OUTPUT
+              fi
+              ;;
+            *)
+              echo "header_text=:memo: Pull Request Event" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+          # Escape PR title and body for JSON
+          PR_TITLE=$(echo '${{ github.event.pull_request.title }}' | jq -Rs . | sed 's/^"//;s/"$//')
+          echo "pr_title=${PR_TITLE}" >> $GITHUB_OUTPUT
+
+          PR_BODY='${{ github.event.pull_request.body }}'
+          if [ -z "$PR_BODY" ]; then
+            PR_BODY="_No description provided_"
+          fi
+          PR_BODY_ESCAPED=$(echo "$PR_BODY" | jq -Rs . | sed 's/^"//;s/"$//')
+          echo "pr_body=${PR_BODY_ESCAPED}" >> $GITHUB_OUTPUT
+
       - name: Send Pull Request Notification to Slack
         if: github.event_name == 'pull_request'
         uses: slackapi/slack-github-action@v1.26.0
@@ -95,14 +142,7 @@ jobs:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "${{
-                      github.event.action == 'opened' && ':bell: New Pull Request Opened' ||
-                      github.event.action == 'reopened' && ':arrows_counterclockwise: Pull Request Reopened' ||
-                      github.event.action == 'synchronize' && ':repeat: Pull Request Updated' ||
-                      (github.event.action == 'closed' && github.event.pull_request.merged && ':white_check_mark: Pull Request Merged') ||
-                      (github.event.action == 'closed' && ':x: Pull Request Closed') ||
-                      ':memo: Pull Request Event'
-                    }}"
+                    "text": "${{ steps.pr-data.outputs.header_text }}"
                   }
                 },
                 {
@@ -130,14 +170,14 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*PR Title:*\n${{ toJSON(github.event.pull_request.title) }}"
+                    "text": "*PR Title:*\n${{ steps.pr-data.outputs.pr_title }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Description:*\n${{ toJSON(github.event.pull_request.body || '_No description provided_') }}"
+                    "text": "*Description:*\n${{ steps.pr-data.outputs.pr_body }}"
                   }
                 },
                 {
