@@ -8,7 +8,7 @@ import { useAuth } from './context/AuthContext'
 export default function App() {
   const { user } = useAuth();
   const location = useLocation();
-  const isHome = location.pathname === '/';
+  const isHome = location.pathname === '/student';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
