@@ -54,7 +54,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Commit Message:*\n```${{ github.event.head_commit.message }}```"
+                    "text": "*Commit Message:*\n${{ toJSON(github.event.head_commit.message) }}"
                   }
                 },
                 {
@@ -130,14 +130,14 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*PR Title:*\n${{ github.event.pull_request.title }}"
+                    "text": "*PR Title:*\n${{ toJSON(github.event.pull_request.title) }}"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Description:*\n${{ github.event.pull_request.body || '_No description provided_' }}"
+                    "text": "*Description:*\n${{ toJSON(github.event.pull_request.body || '_No description provided_') }}"
                   }
                 },
                 {
