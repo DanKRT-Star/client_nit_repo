@@ -1,17 +1,19 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authApi } from '../pages/api';
 
-export enum UserRole {
-  STUDENT = 1,
-  MENTOR = 2
-}
+export const UserRole = {
+  STUDENT: 1,
+  MENTOR:  2
+} as const;
+
+export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 interface User {
     id: string;
     email: string;
     full_name: string;
     avatar: string;
-    role: UserRole;
+    role: typeof UserRole.STUDENT | typeof UserRole.MENTOR;
     phone?: string;
     createdAt: string;
     updatedAt?: string;
@@ -87,13 +89,21 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             const response= await authApi.login(email, password);
 
             if(response.data && response.data.length >0) {
-                const userData = response.data[0];
-                const {password: _, ...userWithoutPassword} = userData;
-
-                setUser(userWithoutPassword);
-                localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-                localStorage.setItem('token', userData.id);
-
+               const raw = response.data[0];
+               const {password, ...rest} = raw as any; void password;
+               const normalized: User = {
+                id: String(rest.id),
+                email: rest.email,
+                full_name: rest.full_name,
+                avatar: rest.avatar,
+                role: (rest.role === 2 || rest.role === '2' || rest.role === 'mentor') ? UserRole.MENTOR : UserRole.STUDENT,
+                phone: rest.phone,
+                createdAt: rest.createdAt,
+                updatedAt: rest.updatedAt ?? rest.createdAt
+               }
+               setUser(normalized);
+               localStorage.setItem('user', JSON.stringify(normalized));
+               localStorage.setItem('token', normalized.id);
                 return {success: true, message:"Đăng nhập thành công!"};
             } else {
                 return {success: false, message:"Đăng nhập thất bại!"}
