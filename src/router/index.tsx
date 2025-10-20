@@ -14,7 +14,6 @@ import CoursePage from '../pages/coursePage';
 import CalendarPage from '../pages/calendarPage';
 import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
-import Lessons from '../pages/lessons';
 
 
 const router = createBrowserRouter([
@@ -54,7 +53,6 @@ const router = createBrowserRouter([
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'assignment', element: <AssignmentPage /> },
       { path: 'blog', element: <BlogPage /> },
-      { path: 'lessons', element: <Lessons /> },
     ],
   },
 
