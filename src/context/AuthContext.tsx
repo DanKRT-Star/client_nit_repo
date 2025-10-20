@@ -14,7 +14,7 @@ interface User {
     role: UserRole;
     phone?: string;
     createdAt: string;
-    updatedAt: string;
+    updatedAt?: string;
 }
 
 interface AuthContextType {
@@ -42,11 +42,30 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
 
             if(savedUser && savedToken) {
                 try {
-                    const userData = JSON.parse(savedUser);
-                    // Verify token bằng cách lấy thông tin user từ server
-                    const response = await authApi.getUserById(userData.id);
-                    if(response.data) {
-                        setUser(userData);
+                    const parsed = JSON.parse(savedUser);
+                    // Verify: token phải khớp user.id
+                    if(String(savedToken) !== String(parsed?.id)) {
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('token');
+                        setIsLoading(false);
+                        return;
+                    }
+                    // Lấy user mới nhất và chuẩn hóa role
+                    const response = await authApi.getUserById(parsed.id);
+                    if(response.data){
+                        const serverUser = response.data;
+                        const normalized = {
+                            id: String(serverUser.id),
+                            email: serverUser.email,
+                            full_name: serverUser.full_name,
+                            avatar: serverUser.avatar,
+                            role: serverUser.role === 2 || serverUser.role === '2' || serverUser.role === 'mentor'
+                            ? UserRole.MENTOR : UserRole.STUDENT,
+                            phone: serverUser.phone,
+                            createdAt: serverUser.createdAt,
+                            updatedAt: serverUser.updatedAt ?? serverUser.createdAt,
+                        } as User;
+                        setUser(normalized);
                     }
                     else {
                         localStorage.removeItem('user');
