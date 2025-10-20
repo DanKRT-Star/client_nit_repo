@@ -47,6 +47,7 @@ export const authApi = {
       avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`,
       role: `user`,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     return api.post('/users', newUser);
   },
