@@ -1,5 +1,80 @@
+import { useState } from "react";
+
 export default function CurrentCourse() {
-  const currentCourses = [
+
+  
+
+  return (
+    <section className="lg:flex-1 lg:flex lg:gap-8">
+      <div className="space-y-8 flex-1">
+        <UpcomingCourse/>  
+        <EnrolledCourses/>
+        <AvailableCourses/>
+      </div>
+      <InstructorList/>
+    </section>
+  );
+}
+
+{/* === Upcoming Courses === */}
+function UpcomingCourse() {
+    const upcomingCourses = [
+    {
+      id: 11,
+      title: "Advanced Next.js & Server Components",
+      instructor: "Vercel Academy",
+      lessons: 9,
+      thumbnail: "https://i.ytimg.com/vi/8aGhZQkoFbQ/maxresdefault.jpg"
+    },
+    {
+      id: 12,
+      title: "UI/UX Principles for Developers",
+      instructor: "DesignCourse",
+      lessons: 8,
+      thumbnail: "https://i.ytimg.com/vi/3t8yG39vwOs/maxresdefault.jpg"
+    },
+    {
+      id: 13,
+      title: "Deploying Apps with Docker & AWS",
+      instructor: "TechWorld with Nana",
+      lessons: 12,
+      thumbnail: "https://i.ytimg.com/vi/9zUHg7xjIqQ/maxresdefault.jpg"
+    }
+  ];
+  return (
+    <div>
+        <h2 className="text-2xl font-bold mb-2.5">Upcoming Courses</h2>
+        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-3">
+          {upcomingCourses.map(course => (
+            <div
+              key={course.id}
+              className="bg-background rounded-md shadow-sm overflow-hidden hover:shadow-md"
+            >
+              <img
+                className="w-full relative aspect-video object-cover"
+                src={course.thumbnail}
+                alt={`${course.title} thumbnail`}
+              />
+
+              <article className="px-4 pt-3 pb-4 space-y-2">
+                <h3 className="text-lg font-semibold truncate">{course.title}</h3>
+                <p className="font-semibold text-secondary">{course.instructor}</p>
+                <p className="text-sm text-secondary">{course.lessons} lessons</p>
+                <button className="mt-2 w-full bg-primary text-primary font-medium py-1.5 rounded-md">
+                  Pre-register
+                </button>
+              </article>
+            </div>
+          ))}
+        </div>
+    </div>
+  )
+}
+
+{/* === Enrolled Courses === */}
+function EnrolledCourses() {
+  
+  const enrolledCourses = [
     {
       id: 1,
       title: "React Fundamentals",
@@ -92,91 +167,193 @@ export default function CurrentCourse() {
     }
   ];
 
-  const upcomingCourses = [
-    {
-      id: 11,
-      title: "Advanced Next.js & Server Components",
-      instructor: "Vercel Academy",
-      lessons: 9,
-      thumbnail: "https://i.ytimg.com/vi/8aGhZQkoFbQ/maxresdefault.jpg"
-    },
-    {
-      id: 12,
-      title: "UI/UX Principles for Developers",
-      instructor: "DesignCourse",
-      lessons: 8,
-      thumbnail: "https://i.ytimg.com/vi/3t8yG39vwOs/maxresdefault.jpg"
-    },
-    {
-      id: 13,
-      title: "Deploying Apps with Docker & AWS",
-      instructor: "TechWorld with Nana",
-      lessons: 12,
-      thumbnail: "https://i.ytimg.com/vi/9zUHg7xjIqQ/maxresdefault.jpg"
-    }
-  ];
+  const [showAll, setShowAll] = useState(false);
+  const displayedCourses = showAll ? enrolledCourses : enrolledCourses.slice(0, 4);
 
   return (
-    <section className="flex-1 flex flex-col gap-8">
-      {/* === Upcoming Courses === */}
-      <div>
-        <h2 className="text-2xl font-bold mb-2.5">Upcoming Courses</h2>
-        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-3">
-          {upcomingCourses.map(course => (
+    <div>
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-2xl font-bold">Recent Enrolled Courses</h2>
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="hover:underline"
+          >
+            {showAll ? "See Less" : "See All"}
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2">
+          {displayedCourses.map(course => (
             <div
               key={course.id}
-              className="bg-surface rounded-md shadow-sm overflow-hidden hover:shadow-md transition"
+              className="bg-background flex rounded-md shadow-md overflow-hidden hover:shadow-lg"
             >
               <img
-                className="w-full relative aspect-video object-cover"
+                className="h-28 object-cover aspect-square"
                 src={course.thumbnail}
                 alt={`${course.title} thumbnail`}
               />
 
-              <article className="px-4 pt-3 pb-4 space-y-2">
-                <h3 className="text-lg font-semibold truncate">{course.title}</h3>
-                <p className="font-semibold text-gray-600">{course.instructor}</p>
-                <p className="text-sm text-gray-500">{course.lessons} lessons</p>
-                <button className="mt-2 w-full bg-primary text-white font-medium py-1.5 rounded-md">
-                  Pre-register
-                </button>
-              </article>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* === Enrolled Courses === */}
-      <div>
-        <h2 className="text-2xl font-bold mb-2.5">Recent Enrolled Courses</h2>
-        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-5">
-          {currentCourses.map(course => (
-            <div key={course.id} className="bg-surface rounded-md shadow-md overflow-hidden hover:shadow-lg transition">
-              <img
-                className="w-full aspect-video object-cover"
-                src={course.thumbnail}
-                alt={`${course.title} thumbnail`}
-              />
-
-              <article className="px-4 pt-3 pb-4 space-y-1">
-                <h3 className="text-lg font-semibold truncate">{course.title}</h3>
-                <p className="font-semibold text-gray-600">{course.instructor}</p>
+              <article className="flex-1 px-4 pt-3 pb-4 space-y-1">
+                <h3 className="font-semibold">{course.title}</h3>
+                <p className="font-semibold text-secondary text-sm">{course.instructor}</p>
                 <div className="flex items-center gap-2">
-                  <div className="relative flex-1 bg-gray-200 h-3 rounded-full overflow-hidden">
+                  <div className="relative flex-1 bg-surface h-3 rounded-full overflow-hidden">
                     <div
-                      className="absolute top-0 left-0 h-full bg-green-500"
-                      style={{ width: `${(course.completedLessons / course.lessons) * 100}%` }}
+                      className="absolute top-0 left-0 h-full bg-primary"
+                      style={{
+                        width: `${(course.completedLessons / course.lessons) * 100}%`
+                      }}
                     />
                   </div>
-                  <p className="text-sm ">
+                  <p className="text-sm">
                     {course.completedLessons}
-                    <span className="text-gray-500">/{course.lessons} lessons</span>
+                    <span className="text-secondary">/{course.lessons} lessons</span>
                   </p>
                 </div>
               </article>
             </div>
           ))}
         </div>
+    </div>
+  )
+}
+
+{/* === Available Courses === */}
+function AvailableCourses() {
+  const availableCourses = [
+    {
+      id: 21,
+      title: "Fullstack Development with MERN",
+      instructor: "Codevolution",
+      lessons: 15,
+      maxStudents: 50,
+      currentStudents: 32,
+      thumbnail: "https://i.ytimg.com/vi/7CqJlxBYj-M/maxresdefault.jpg"
+    },
+    {
+      id: 22,
+      title: "Building Scalable APIs with NestJS",
+      instructor: "Academind",
+      lessons: 10,
+      maxStudents: 40,
+      currentStudents: 27,
+      thumbnail: "https://i.ytimg.com/vi/GHTA143_b-s/maxresdefault.jpg"
+    },
+    {
+      id: 23,
+      title: "Machine Learning Basics for Developers",
+      instructor: "freeCodeCamp",
+      lessons: 12,
+      maxStudents: 60,
+      currentStudents: 54,
+      thumbnail: "https://i.ytimg.com/vi/GwIo3gDZCVQ/maxresdefault.jpg"
+    },
+    {
+      id: 24,
+      title: "UI Animation with Framer Motion",
+      instructor: "Framer Academy",
+      lessons: 7,
+      maxStudents: 30,
+      currentStudents: 18,
+      thumbnail: "https://i.ytimg.com/vi/Zi7wH6MrzEo/maxresdefault.jpg"
+    },
+    {
+      id: 25,
+      title: "Data Visualization with D3.js",
+      instructor: "Curran Kelleher",
+      lessons: 9,
+      maxStudents: 40,
+      currentStudents: 25,
+      thumbnail: "https://i.ytimg.com/vi/TOJ9yjvlapY/maxresdefault.jpg"
+    }
+  ];
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-2.5">Available Courses</h2>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+        {availableCourses.map((course) => {
+          return (
+            <div key={course.id} className="rounded-md bg-background overflow-hidden shadow-md hover:shadow-xl">
+              <img
+                src={course.thumbnail}
+                alt={course.title}
+                className="w-full aspect-video"
+              />
+              <article className="px-4 py-3 space-y-1">
+                <h3 className="font-semibold ">{course.title}</h3>
+                <p>👨‍🏫 {course.instructor}</p>
+                <p>📘 Lessons: {course.lessons}</p>
+                <p>
+                  👥 {course.currentStudents}/{course.maxStudents} Students
+                </p>
+              </article>
+            </div>
+          );
+        })}
       </div>
-    </section>
+    </div>
+  )
+}
+
+function InstructorList() {
+  const instructors = [
+  {
+    id: 1,
+    name: "John Smith",
+    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
+    expertise: ["React", "JavaScript"],
+    rating: 4.8
+  },
+  {
+    id: 2,
+    name: "Anna Lee",
+    avatar: "https://randomuser.me/api/portraits/women/55.jpg",
+    expertise: ["Firebase", "Node.js"],
+    rating: 4.6
+  },
+  {
+    id: 3,
+    name: "Kevin Powell",
+    avatar: "https://randomuser.me/api/portraits/men/60.jpg",
+    expertise: ["CSS", "UI Design"],
+    rating: 4.9
+  },
+  {
+    id: 4,
+    name: "Ben Awad",
+    avatar: "https://randomuser.me/api/portraits/men/75.jpg",
+    expertise: ["Next.js", "GraphQL"],
+    rating: 4.7
+  },
+  {
+    id: 5,
+    name: "Jack Herrington",
+    avatar: "https://randomuser.me/api/portraits/men/68.jpg",
+    expertise: ["TypeScript", "React"],
+    rating: 4.9
+  }
+];
+
+  return (
+    <aside className="hidden h-full lg:block">
+      <h2 className="font-semibold mb-2.5">Instructors</h2>
+      <ul>
+        {instructors.map((ins) => (
+          <li key={ins.id} className="flex gap-2 border-b-2 py-4">
+            <img src={ins.avatar} alt={ins.name} className="h-14 aspect-square rounded-full" />
+            <article className="instructor-info flex flex-col justify-between text-sm">
+              <h4 className="instructor-name">{ins.name}</h4>
+              <p className="instructor-expertise">
+                {ins.expertise.join(", ")}
+              </p>
+              <span className="instructor-rating">⭐ {ins.rating}</span>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </aside>
   );
 }

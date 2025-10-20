@@ -1,98 +1,153 @@
-import { Link } from "react-router"
+import { Link } from "react-router-dom"
 
-export default function Sidebar({currentPage} : {
-    currentPage: string,
-}) {
+interface SidebarProps {
+    currentPage: string;
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
     const NavItems = [
-        { name: "Dashboard", icon: <HomeIcon /> },
-        { name: "Lessons", icon: <LessonIcon /> },
         { name: "Courses", icon: <BookIcon /> },
-        { name: "Assignment", icon: <TasksIcon /> },
-        { name: "Calendar", icon: <CalendarIcon /> },
-        { name: "Blog", icon: <BlogIcon /> },
-        { name: "Settings", icon: <CogIcon /> }
+        { name: "Assessments", icon: <AssessmentIcon /> },
+        { name: "Challenges", icon: <ChallengeIcon /> },
+        { name: "Certification", icon: <CertificateIcon /> },
+        { name: "Project", icon: <ProjectIcon /> },
+        { name: "Download", icon: <DownloadIcon /> }
     ]
 
     return (
-        <div className="w-fit h-full bg-primary">
+        <>
+            {/* Overlay*/}
+            {isOpen && (
+                <div 
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 xl:hidden"
+                    role = "button"
+                    tabIndex = {0}
+                    aria-label = "Close sidebar"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
+                    onClick={onClose}
+                />
+            )}
 
-            <nav className="mt-5">
-                <ul>
-                    {NavItems.map(({ name, icon }) => {
-                        const path = name === "Dashboard" ? "/" : `/${name.toLowerCase()}`;
-                        const isActive = currentPage === path;
+            {/* Sidebar */}
+            <div className={`
+                fixed xl:relative
+                top-0 left-0 h-full
+                w-64 bg-surface
+                flex flex-col
+                pl-6
+                z-40
+                ${isOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
+            `}>
+                {/* Close button*/}
+                <div className="xl:hidden flex justify-end p-4">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-primary" viewBox="0 0 24 24">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                        </svg>
+                    </button>
+                </div>
 
-                        return (
-                        <li
-                            key={name}
-                            className={`cursor-pointer flex items-center gap-3 py-4 pl-10 pr-5
-                            ${isActive ? "bg-background text-primary" : "text-white"}`}
-                        >
-                            <Link to={path} className="flex items-center gap-3 w-full">
-                            <span className="text-lg">{icon}</span>
-                            <span>{name}</span>
-                            </Link>
-                        </li>
-                        );
-                    })}
-                </ul>
-            </nav>
-        </div>
+                {/* Navigation */}
+                <nav className="flex-1 pt-6 xl:pt-6">
+                    <ul className="space-y-1 px-3">
+                        {NavItems.map(({ name, icon }) => {
+                            const path = name === "Dashboard" ? "/" : `/${name.toLowerCase()}`;
+                            const isActive = currentPage === path;
+
+                            return (
+                            <li key={name}>
+                                <Link 
+                                    to={path} 
+                                    onClick={onClose}
+                                    aria-current={isActive ? "page" : undefined}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+                                        isActive 
+                                            ? "bg-primary text-primary font-medium shadow-sm" 
+                                            : "hover:bg-component"
+                                    }`}
+                                >
+                                    <span className="text-lg">{icon}</span>
+                                    <span className="text-sm">{name}</span>
+                                </Link>
+                            </li>
+                            );
+                        })}
+                    </ul>
+                </nav>
+
+                {/* Unlock Premium Section */}
+                <div className="p-6">
+                    <div className="bg-primary rounded-lg p-4 text-center shadow-sm">
+                        <div className="w-16 h-16 bg-background text-main rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3z"/>
+                            </svg>
+                        </div>
+                        <p className="text-xs text-primary mb-3">
+                            Unlock Premium<br/>Resources & Features
+                        </p>
+                        <button type="button" className="w-full bg-background hover:bg-gray-800 dark:hover:bg-gray-100 font-medium py-2 px-4 rounded-lg text-sm">
+                            Upgrade
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </>
     )
 }   
 
-function HomeIcon() {
-    return (
-        <svg  xmlns="http://www.w3.org/2000/svg" width="25" height="25"  fill="currentColor" viewBox="0 0 24 24" >
-            <path d="M3 13h1v7c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h1c.4 0 .77-.24.92-.62.16-.37.07-.8-.22-1.09l-8.99-9a.996.996 0 0 0-1.41 0l-9.01 9c-.29.29-.37.72-.22 1.09s.52.62.92.62Zm6 2c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v5H9z"></path>
-        </svg>
-    )
-}
-
-function LessonIcon() {
-    return (
-        <svg  xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" viewBox="0 0 24 24" >
-            <path d="M14.71 2.29A1 1 0 0 0 14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-.27-.11-.52-.29-.71zM7 7h4v2H7zm10 10H7v-2h10zm0-4H7v-2h10zm-4-4V3.5L18.5 9z"></path>
-        </svg>
-    )
-}
 
 function BookIcon() {
     return (
-        <svg  xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" viewBox="0 0 24 24" >
-            <path d="M20 2H6C4.35 2 3 3.35 3 5v14c0 1.65 1.35 3 3 3h15v-2H6c-.55 0-1-.45-1-1s.45-1 1-1h14c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1m-3 9-2-1-2 1V4h4z"></path>
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 2H6C4.35 2 3 3.35 3 5v14c0 1.65 1.35 3 3 3h15v-2H6c-.55 0-1-.45-1-1s.45-1 1-1h14c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1m-3 9-2-1-2 1V4h4z"/>
         </svg>
     )
 }
 
-function TasksIcon() {
+function AssessmentIcon() {
     return (
-        <svg  xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" viewBox="0 0 24 24" >
-            <path d="M9 11h11v2H9zM9 6h11v2H9zM9 16h11v2H9zM4 5.5h3v3H4zM4 10.5h3v3H4zM4 15.5h3v3H4z"></path>
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
         </svg>
     )
 }
 
-function CalendarIcon() {
+function ChallengeIcon() {
     return (
-        <svg  xmlns="http://www.w3.org/2000/svg" width="25" height="25"  fill="currentColor" viewBox="0 0 24 24" >
-            <path d="m19,4h-2v-2h-2v2h-6v-2h-2v2h-2c-1.1,0-2,.9-2,2v1h18v-1c0-1.1-.9-2-2-2Z"></path><path d="m3,20c0,1.1.9,2,2,2h14c1.1,0,2-.9,2-2v-12H3v12Zm12-8h2v2h-2v-2Zm0,4h2v2h-2v-2Zm-4-4h2v2h-2v-2Zm0,4h2v2h-2v-2Zm-4-4h2v2h-2v-2Zm0,4h2v2h-2v-2Z"></path>
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2l-5.5 9h11L12 2zm0 3.84L13.93 9h-3.87L12 5.84zM17.5 13c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 7c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zM3 21.5h8v-8H3v8zm2-6h4v4H5v-4z"/>
         </svg>
     )
 }
 
-function BlogIcon() {
+function CertificateIcon() {
     return (
-        <svg  xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" viewBox="0 0 24 24" >
-            <path d="M9.01 13.58v-.08c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5h-.08l-5.92 5.92.2.2 12.3-3.35v-5.35l1.5-1.5-5.41-5.41-1.5 1.5H6.25L2.9 19.31l.2.2 5.92-5.92ZM19.92 9.5l1.09-1.09c.38-.38.58-.88.58-1.42 0-.53-.21-1.04-.59-1.41L18.41 3c-.78-.78-2.05-.78-2.83 0L14.5 4.08z"></path>
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h9l-2 3v1l4-4 4 4v-1l-2-3h3c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 11.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
         </svg>
     )
 }
 
-function CogIcon() {
+function ProjectIcon() {
     return (
-        <svg  xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" viewBox="0 0 24 24" >
-            <path d="m21.16 7.86-1-1.73a1.997 1.997 0 0 0-2.73-.73l-.53.31c-.58-.46-1.22-.83-1.9-1.11V4c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v.6c-.67.28-1.31.66-1.9 1.11l-.53-.31c-.96-.55-2.18-.22-2.73.73l-1 1.73c-.55.96-.22 2.18.73 2.73l.5.29c-.05.37-.08.74-.08 1.11s.03.74.08 1.11l-.5.29c-.96.55-1.28 1.78-.73 2.73l1 1.73c.55.95 1.78 1.28 2.73.73l.53-.31c.58.46 1.22.83 1.9 1.11v.6c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2v-.6a8.7 8.7 0 0 0 1.9-1.11l.53.31c.96.55 2.18.22 2.73-.73l1-1.73c.55-.96.22-2.18-.73-2.73l-.5-.29c.05-.37.08-.74.08-1.11s-.03-.74-.08-1.11l.5-.29c.96-.55 1.28-1.78.73-2.73M12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4"></path>
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 6h-3v3h-2v-3h-3v-2h3V7h2v3h3v2z"/>
+        </svg>
+    )
+}
+
+function DownloadIcon() {
+    return (
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3z"/>
+            <path d="M12 15l-4 4h3v3h2v-3h3l-4-4z"/>
         </svg>
     )
 }
