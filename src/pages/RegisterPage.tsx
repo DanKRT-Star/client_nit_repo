@@ -14,7 +14,7 @@ export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
-    
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
@@ -28,7 +28,7 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         //Validation
-        if(!formData.full_name || !formData.email || formData.password) {
+        if(!formData.full_name || !formData.email || !formData.password) {
             setError('Vui lòng nhập đầy đủ thông tin bắt buộc!');
             setIsLoading(false);
             return;
@@ -107,6 +107,23 @@ export default function RegisterPage() {
                             Email <span className='text-red-500'>*</span>
                         </label>
                         <input 
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                            placeholder='example@gmail.com'
+                            disabled={isLoading}
+                        />
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Số điện thoại
+                        </label>
+                        <input 
                             id="phone"
                             name="phone"
                             type="tel"
@@ -115,7 +132,7 @@ export default function RegisterPage() {
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
                             placeholder='0123456789'
                             disabled={isLoading}
-                            />
+                        />
                     </div>
 
                     {/* Password */}
