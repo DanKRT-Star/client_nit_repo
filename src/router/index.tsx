@@ -1,9 +1,19 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from '../App';
+import MentorApp from '../MentorApp';
 import NotFound from '../pages/NotFound';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from '../components/ProtectedRoute';
+import RoleBasedRoute from '../components/RoleBasedRoute';
+import { UserRole, useAuth } from '../context/AuthContext';
+// Import các pages
+import CoursePage from '../pages/coursePage';
+import CalendarPage from '../pages/calendarPage';
+import AssignmentPage from '../pages/assignmentPage';
+import BlogPage from '../pages/blogPage';
+import Lessons from '../pages/lessons';
+
 
 const router = createBrowserRouter([
   // Public routes (không cần đăng nhập)
@@ -16,20 +26,70 @@ const router = createBrowserRouter([
     element: <RegisterPage />,
   },
 
-  // Protected routes (cần đăng nhập)
+    // Root redirect dựa vào role
   {
     path: '/',
     element: (
       <ProtectedRoute>
-        <App />
+        <RoleRedirect />
       </ProtectedRoute>
     ),
   },
+
+    // Student routes
+  {
+    path: '/student',
+    element: (
+      <ProtectedRoute>
+        <RoleBasedRoute allowedRoles={[UserRole.STUDENT]}>
+          <App />
+        </RoleBasedRoute>
+      </ProtectedRoute>
+    ),
+    children: [
+      { path: '', element: <Navigate to="/student/courses" replace /> },
+      { path: 'courses', element: <CoursePage /> },
+      { path: 'calendar', element: <CalendarPage /> },
+      { path: 'assignment', element: <AssignmentPage /> },
+      { path: 'blog', element: <BlogPage /> },
+      { path: 'lessons', element: <Lessons /> },
+    ],
+  },
+
+    // Mentor routes
+  {
+    path: '/mentor',
+    element: (
+      <ProtectedRoute>
+        <RoleBasedRoute allowedRoles={[UserRole.MENTOR]}>
+          <MentorApp />
+        </RoleBasedRoute>
+      </ProtectedRoute>
+    ),
+    children: [
+      { path: '', element: <div>Mentor Dashboard (Coming soon)</div> },
+      { path: 'courses', element: <div>Quản lý khóa học</div> },
+      { path: 'students', element: <div>Quản lý học viên</div> },
+      { path: 'analytics', element: <div>Thống kê</div> },
+    ],
+  },
+
   // 404
   {
     path: '*',
     element: <NotFound />,
   }
 ]);
+
+// Component redirect dựa vào role
+function RoleRedirect() {
+  const { user } = useAuth();
+  
+  if (user?.role === UserRole.MENTOR) {
+    return <Navigate to="/mentor" replace />;
+  }
+  return <Navigate to="/student" replace />;
+}
+
 
 export default router;
