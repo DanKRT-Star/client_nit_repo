@@ -29,5 +29,37 @@ export const userApi = {
   delete: (id: any) => api.delete(`/users/${id}`),
 };
 
+// ==== AUTH API ====
+export const authApi = {
+  // Đăng nhập check email và password
+  login: (email: string, password: string) =>
+    api.get(`/users?email=${email}&password=${password}`),
+
+  // Đăng ký user mới
+  register: (userData: {
+    email: string;
+    password: string;
+    full_name: string;
+    phone?: string;
+  }) => {
+    const newUser = {
+      ...userData,
+      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`,
+      role: `user`,
+      createdAt: new Date().toISOString(),
+    };
+    return api.post('/users', newUser);
+  },
+
+  // Kiểm tra email có tồn tại kh
+  checkEmailExists: (email: string) =>
+    api.get(`/users?email=${email}`),
+
+  // Lấy thông tin user theo ID
+  getUserById: (id: string) =>
+    api.get(`/users/${id}`),
+};
+
+
 export default api;
 

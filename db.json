@@ -1,48 +1,174 @@
 {
   "users": [
     {
-      "id": 1,
-      "name": "Nguyễn Văn A",
-      "email": "a@example.com",
-      "age": 25
+      "id": "1",
+      "email": "student@example.com",
+      "password": "student123",
+      "full_name": "Nguyễn Văn A",
+      "avatar": "https://i.pravatar.cc/150?img=1",
+      "role": 1,
+      "phone": "0123456789",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
     },
     {
-      "id": 2,
-      "name": "Trần Thị B",
-      "email": "b@example.com",
-      "age": 30
+      "id": "2",
+      "email": "mentor@example.com",
+      "password": "mentor123",
+      "full_name": "Trần Thị B",
+      "avatar": "https://i.pravatar.cc/150?img=2",
+      "role": 2,
+      "phone": "0987654321",
+      "createdAt": "2025-01-15T00:00:00.000Z",
+      "updatedAt": "2025-01-15T00:00:00.000Z"
     },
     {
-      "id": 3,
-      "name": "Trần Thị C",
-      "email": "c@example.vn",
-      "age": 30
+      "id": "3",
+      "email": "student2@example.com",
+      "password": "test123",
+      "full_name": "Lê Văn C",
+      "avatar": "https://i.pravatar.cc/150?img=3",
+      "role": 1,
+      "phone": "0912345678",
+      "createdAt": "2025-02-01T00:00:00.000Z",
+      "updatedAt": "2025-02-01T00:00:00.000Z"
     }
   ],
-  "products": [
+  "courses": [
     {
-      "id": 1,
-      "name": "Laptop Dell",
-      "price": 15000000,
-      "category": "electronics"
+      "id": "1",
+      "title": "React Fundamentals",
+      "description": "Learn the basics of React from scratch",
+      "instructor": "John Smith",
+      "instructorAvatar": "https://i.pravatar.cc/150?img=11",
+      "thumbnail": "https://i.ytimg.com/vi/w7ejDZ8SWv8/maxresdefault.jpg",
+      "duration": "10 hours",
+      "lessons": 10,
+      "level": "Beginner",
+      "price": 500000,
+      "rating": 4.8,
+      "students": 1250,
+      "category": "Web Development",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     },
     {
-      "id": 2,
-      "name": "iPhone 15",
-      "price": 25000000,
-      "category": "electronics"
+      "id": "2",
+      "title": "Firebase Integration Basics",
+      "description": "Master Firebase for modern web applications",
+      "instructor": "Anna Lee",
+      "instructorAvatar": "https://i.pravatar.cc/150?img=12",
+      "thumbnail": "https://i.ytimg.com/vi/9kRgVxULbag/maxresdefault.jpg",
+      "duration": "7 hours",
+      "lessons": 7,
+      "level": "Intermediate",
+      "price": 750000,
+      "rating": 4.6,
+      "students": 850,
+      "category": "Backend Development",
+      "createdAt": "2025-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "3",
+      "title": "UI/UX Design for Beginners",
+      "description": "Create beautiful and user-friendly interfaces",
+      "instructor": "David Kim",
+      "instructorAvatar": "https://i.pravatar.cc/150?img=13",
+      "thumbnail": "https://i.ytimg.com/vi/_HPbI1T4F-g/maxresdefault.jpg",
+      "duration": "5 hours",
+      "lessons": 5,
+      "level": "Beginner",
+      "price": 400000,
+      "rating": 4.9,
+      "students": 2100,
+      "category": "Design",
+      "createdAt": "2025-01-20T00:00:00.000Z"
     }
   ],
-  "categories": [
+  "enrollments": [
     {
-      "id": 1,
-      "name": "Electronics",
-      "description": "Thiết bị điện tử"
+      "id": "1",
+      "userId": "1",
+      "courseId": "1",
+      "progress": 75,
+      "status": "in_progress",
+      "enrolledAt": "2025-02-01T00:00:00.000Z",
+      "lastAccessedAt": "2025-10-20T08:30:00.000Z"
     },
     {
-      "id": 2,
-      "name": "Books",
-      "description": "Sách và tài liệu"
+      "id": "2",
+      "userId": "1",
+      "courseId": "2",
+      "progress": 40,
+      "status": "in_progress",
+      "enrolledAt": "2025-02-05T00:00:00.000Z",
+      "lastAccessedAt": "2025-10-19T14:20:00.000Z"
+    },
+    {
+      "id": "3",
+      "userId": "1",
+      "courseId": "3",
+      "progress": 100,
+      "status": "completed",
+      "enrolledAt": "2025-01-25T00:00:00.000Z",
+      "completedAt": "2025-02-10T00:00:00.000Z"
+    }
+  ],
+  "assignments": [
+    {
+      "id": "1",
+      "courseId": "1",
+      "title": "Build a Todo App with React",
+      "description": "Create a simple todo application using React hooks",
+      "dueDate": "2025-10-25T23:59:59.000Z",
+      "status": "pending",
+      "points": 100
+    },
+    {
+      "id": "2",
+      "courseId": "2",
+      "title": "Firebase Authentication Integration",
+      "description": "Implement user authentication using Firebase",
+      "dueDate": "2025-10-30T23:59:59.000Z",
+      "status": "pending",
+      "points": 150
+    }
+  ],
+  "schedules": [
+    {
+      "id": "1",
+      "userId": "1",
+      "title": "Attend online course: React Fundamentals",
+      "startTime": "08:00",
+      "endTime": "09:30",
+      "date": "2025-10-20",
+      "type": "course"
+    },
+    {
+      "id": "2",
+      "userId": "1",
+      "title": "Team meeting with project group",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "date": "2025-10-20",
+      "type": "meeting"
+    },
+    {
+      "id": "3",
+      "userId": "1",
+      "title": "Work on assignment: Firebase integration",
+      "startTime": "13:30",
+      "endTime": "15:00",
+      "date": "2025-10-20",
+      "type": "assignment"
+    },
+    {
+      "id": "4",
+      "userId": "1",
+      "title": "Watch YouTube video about UX design",
+      "startTime": "16:00",
+      "endTime": "17:30",
+      "date": "2025-10-20",
+      "type": "self-study"
     }
   ]
 }
