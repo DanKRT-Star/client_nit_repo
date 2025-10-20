@@ -32,6 +32,16 @@
       "phone": "0912345678",
       "createdAt": "2025-02-01T00:00:00.000Z",
       "updatedAt": "2025-02-01T00:00:00.000Z"
+    },
+    {
+      "id": "6e73",
+      "full_name": "lalala",
+      "email": "lalala@gmail.com",
+      "password": "123456",
+      "phone": "0123456789",
+      "avatar": "https://i.pravatar.cc/150?img=32",
+      "role": "user",
+      "createdAt": "2025-10-20T09:45:44.915Z"
     }
   ],
   "courses": [
