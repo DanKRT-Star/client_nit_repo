@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
-  const { user, logout, isStudent, isMentor } = useAuth();
+  const { user, logout, isMentor } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   
