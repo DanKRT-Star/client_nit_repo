@@ -45,7 +45,7 @@ export const authApi = {
     const newUser = {
       ...userData,
       avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`,
-      role: `user`,
+      role: 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
