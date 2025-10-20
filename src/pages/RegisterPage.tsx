@@ -34,8 +34,8 @@ export default function RegisterPage() {
             return;
         }
 
-        if(formData.password.length < 6) {
-            setError('Mật khẩu phải có ít nhất 6 ký tự!');
+        if(formData.password.length < 8) {
+            setError('Mật khẩu phải có ít nhất 8 ký tự!');
             setIsLoading(false);
             return;
         }
@@ -56,6 +56,7 @@ export default function RegisterPage() {
                 setError(result.message);
             }
         } catch (err) {
+            console.log('Register error: ', err)
             setError('Có lỗi xảy ra. Vui lòng thử lại!');
         } finally {
             setIsLoading(false);
