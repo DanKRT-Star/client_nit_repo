@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth, UserRole } from './context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   currentPage: string;
@@ -7,6 +9,15 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
+  const { user, logout, isStudent, isMentor } = useAuth();
+  const navigate = useNavigate();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const navItems = ['Courses', 'Calendar', 'Assignment', 'Blog'];
   const [isDark, setIsDark] = useState(false);
 
@@ -117,10 +128,95 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
           )}
         </button>
 
-        {/* Sign In Button */}
-        <button type="button" className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-medium px-3 md:px-6 py-2 rounded-lg transition-colors text-sm md:text-base">
-          Sign In
-        </button>
+        {/* User Role Badge - Hidden on mobile */}
+        <span className={`hidden md:inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+          isMentor 
+            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
+            : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+        }`}>
+          {isMentor ? 'Mentor' : 'Student'}
+        </span>
+
+        {/* User Menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center gap-2 hover:opacity-80 transition"
+          >
+            <img
+              src={user?.avatar}
+              alt={user?.full_name}
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-primary object-cover"
+            />
+            <div className="hidden lg:block text-left">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {user?.full_name}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {user?.email}
+              </p>
+            </div>
+            <svg
+              className="hidden md:block w-4 h-4 text-gray-600 dark:text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Dropdown Menu */}
+          {showUserMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowUserMenu(false)}
+              />
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-20 border border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {user?.full_name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {user?.email}
+                  </p>
+                  <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-semibold ${
+                    isMentor 
+                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  }`}>
+                    {isMentor ? 'Mentor' : 'Student'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    // Navigate to profile page (nếu có)
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                  </svg>
+                  Thông tin cá nhân
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    handleLogout();
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                  </svg>
+                  Đăng xuất
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

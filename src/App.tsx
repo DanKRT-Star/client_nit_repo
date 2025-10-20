@@ -3,8 +3,10 @@ import { Outlet, useLocation, Link } from 'react-router'
 import Header from './header'
 import Sidebar from './sidebar'
 import { useState } from 'react'
+import { useAuth } from './context/AuthContext'
 
 export default function App() {
+  const { user } = useAuth();
   const location = useLocation();
   const isHome = location.pathname === '/';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -30,7 +32,7 @@ export default function App() {
                       {/* Welcome Section */}
                       <section className='flex gap-2.5 rounded-lg'>
                           <article>
-                            <h1 className="text-3xl font-bold">Welcome back <span className='text-primary'>User</span></h1>
+                            <h1 className="text-3xl font-bold">Welcome back <span className='text-primary'>{user?.full_name}</span></h1>
                             <p className="text-base">Explore new courses and continue your learning journey!</p>
                           </article>
                       </section> 
