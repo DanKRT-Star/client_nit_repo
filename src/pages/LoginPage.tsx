@@ -37,17 +37,18 @@ export default function LoginPage(){
                 setError(result.message);
             }
         } catch(err) {
+            console.log('Login error:', err);
             setError('Có lỗi xảy ra. Vui lòng thử lại!');
         } finally {
             setIsLoading(false);
         }
     }
     return (
-        <div className="min-h-scren flex items-center justify-center bg-gradient-to-br from-blue-50 to-indogo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indogo-100 dark:from-gray-900 dark:to-gray-800 p-4">
             <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
                 {/* Header */}
                 <div className='text-center mb-8'>
-                    <h1 className='text-3xl font-bold text-gray-900 dark:text-white- mb-2'>
+                    <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-2'>
                         Đăng nhập
                     </h1>
                     <p className='text-gray-600 dark:text-gray-400'>
