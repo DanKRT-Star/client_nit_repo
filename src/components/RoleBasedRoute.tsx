@@ -1,9 +1,10 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth, UserRole } from '../context/AuthContext';
+import type { ReactNode } from 'react';
 
 interface RoleBasedRouteProps {
-  children: React.ReactNode;
-  allowedRoles: number[];
+  children: ReactNode;
+  allowedRoles: UserRole[];
 }
 
 export default function RoleBasedRoute({ children, allowedRoles }: RoleBasedRouteProps) {
