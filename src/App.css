@@ -75,6 +75,8 @@ html.dark {
     font-family: 'Poppins', sans-serif;
     background-color: var(--color-surface);
     color: var(--color-text-main);
+    height: 100%;
+    overflow: hidden;
   }
 
   button {

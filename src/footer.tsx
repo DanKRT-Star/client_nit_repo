@@ -2,7 +2,7 @@ import { FaFacebookF, FaInstagram, FaTwitter, FaGooglePlusG, FaYoutube } from "r
 
 export default function Footer() {
   return (
-    <footer className="bg-primary text-primary text-center shadow-lg flex-1">
+    <footer className="bg-primary text-primary text-center shadow-lg ">
       {/* Social Icons */}
       <div className="flex justify-center gap-5 pt-10 pb-10">
         {[
@@ -16,7 +16,6 @@ export default function Footer() {
             key={i}
             href={link}
             target="_blank"
-            rel="noopener noreferrer"
             className="bg-background text-main w-10 h-10 flex items-center justify-center rounded-full text-lg transition-all duration-300 hover:-translate-y-1 hover:bg-cyan-500 hover:text-white"
           >
             <Icon />

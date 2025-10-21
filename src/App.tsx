@@ -17,19 +17,20 @@ export default function App() {
           onMenuClick={() => setIsSidebarOpen(true)}
         />
 
-        <main className='flex relative'>
+        <main className=' flex-1 relative overflow-auto'>
+          <div className='flex'>
             <Sidebar 
               currentPage={location.pathname}
               isOpen={isSidebarOpen}
               onClose={() => setIsSidebarOpen(false)}
             />
             
-            <div className="main p-4 md:p-10 flex-1 flex flex-col gap-5 overflow-y-auto">
+            <div className="main p-4 md:p-6 h-fit flex-1 flex-col gap-5">
                 <Outlet />
             </div>
+          </div>
+            <Footer />
         </main>
-
-        <Footer />
     </div>
   )
 }

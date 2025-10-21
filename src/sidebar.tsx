@@ -34,6 +34,7 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
             <div className={`
                 fixed xl:relative
                 top-0 left-0 h-full
+                lg:h-fit
                 w-64 bg-surface
                 flex flex-col
                 pl-6
