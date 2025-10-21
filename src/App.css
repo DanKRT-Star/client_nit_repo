@@ -1,101 +1,80 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Định nghĩa màu sắc cho dự án */
-@layer theme {
-  :root {
-    /* 1. Màu Thương Hiệu (Brand) */
-    --color-primary: #57CC99;
-    --color-primary-light: #80D9B1;
-    --color-primary-dark: #43B386;
-    
-    --color-secondary: #4A90E2;
-    --color-secondary-light: #7FB8EF;
-    --color-secondary-dark: #357ABD;
-    
-    /* 2. Màu Ngữ Nghĩa (Semantic) */
-    --color-success: #57CC99;
-    --color-success-light: #E0F7EF;
-    --color-success-dark: #3A8C6C;
-    
-    --color-danger: #E74C3C;
-    --color-danger-light: #FADBD8;
-    --color-danger-dark: #B93C2F;
-    
-    --color-warning: #F1C40F;
-    --color-warning-light: #FEF9E7;
-    --color-warning-dark: #B7950B;
-    
-    --color-info: #4A90E2;
-    --color-info-light: #DDEAFB;
-    --color-info-dark: #357ABD;
-    
-    /* 3. Màu Trung Tính (Neutral) */
-    --color-text-primary: #2C3E50;
-    --color-text-secondary: #7F8C8D;
-    --color-background: #FAFAFA;
-    --color-surface: #FFFFFF;
-    --color-border-color: #EAECEE;
-  }
+/* ========== 🌞 LIGHT THEME ========== */
+:root {
+  /* Brand */
+  --color-primary: #000000;
+  --color-component: #c7c8c9;
+
+  /* Semantic */
+  --color-success: #00ff7f;
+  --color-danger: #ff4c4c;
+  --color-warning: #ffd700;
+  --color-info: #a0a0a0;
+
+  /* Neutral */
+  --color-text-main: #000000;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #666565;
+  --color-background: #ffffff;
+  --color-surface: #f5f5f5;
+  --color-border-color: #e5e5e5;
 }
 
-/* App.css */
+/* ========== 🌙 DARK THEME ========== */
+html.dark {
+  --color-primary: #ffffff;
+  
+  --color-component: #a0a0a0;
+
+  --color-success: #00ff7f;
+  --color-danger: #ff4c4c;
+  --color-warning: #ffd700;
+  --color-info: #a0a0a0;
+
+  --color-text-main: #ffffff;
+  --color-text-primary: #000000;
+  --color-text-secondary: #cfcfcf;
+  --color-background: #1a1a1a;
+  --color-surface: #000000;
+  --color-border-color: #333333;
+}
+
+/* ========== ✨ Utility classes ========== */
 @layer utilities {
-  .font-opens {
-    font-family: 'Open Sans', sans-serif;
+  .font-poppins {
+    font-family: 'Poppins', sans-serif;
   }
 
-  /* Background colors */
-  .bg-primary { background-color: var(--color-primary); }
-  .bg-primary-light { background-color: var(--color-primary-light); }
-  .bg-primary-dark { background-color: var(--color-primary-dark); }
-  .bg-secondary { background-color: var(--color-secondary); }
   .bg-surface { background-color: var(--color-surface); }
   .bg-background { background-color: var(--color-background); }
-  
-  /* Text colors */
-  .text-primary { color: var(--color-primary); }
-  .text-primary-light { color: var(--color-primary-light); }
-  .text-primary-dark { color: var(--color-primary-dark); }
-  .text-secondary { color: var(--color-secondary); }
-  .text-main { color: var(--color-text-primary); }
-  .text-sub { color: var(--color-text-secondary); }
-  
-  /* Border colors */
+  .bg-primary { background-color: var(--color-primary);}
+  .bg-component { background-color: var(--color-component);}
+
+  .text-main { color: var(--color-text-main);}
+  .text-primary { color: var(--color-text-primary); }
+  .text-secondary { color: var(--color-text-secondary); }
+
   .border-primary { border-color: var(--color-primary); }
   .border-color { border-color: var(--color-border-color); }
-  
-  /* Hover states */
-  .hover\:bg-primary-dark:hover { background-color: var(--color-primary-dark); }
-  .hover\:bg-primary-light:hover { background-color: var(--color-primary-light); }
-}  
 
-/* Dark mode styles */
-@layer base {
-  html.dark {
-    color-scheme: dark;
-    --color-text-primary: #E5E7EB;
-    --color-text-secondary: #9CA3AF;
-    --color-background: #1F2937;
-    --color-surface: #374151;
-    --color-border-color: #4B5563;
-  }
+  .hover\:bg-primary:hover { background-color: var(--color-primary); }
 }
 
-@layer components {
-  *, *::after {
-    transition: all 0.3s;
+@layer base {
+  * {
+    transition: all 0.25s ease;
   }
 
   html, body, #root {
-    height: 100%;
-  }
-
-  #root {
-    font-family: 'Open Sans', sans-serif;
+    position: relative;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--color-surface);
+    color: var(--color-text-main);
   }
 
   button {
