@@ -146,7 +146,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
           >
             <img
               src={user?.avatar}
-              alt={user?.full_name}
+              alt={user?.full_name || 'User avatar'}
               className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-primary object-cover"
             />
             <div className="hidden lg:block text-left">
@@ -162,7 +162,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              aria-label="Toggle user menu"
+              aria-hidden="true"
+              focusable="false"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -194,6 +195,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                   </span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     setShowUserMenu(false);
                     // Navigate to profile page (nếu có)
@@ -206,6 +208,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                   Thông tin cá nhân
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setShowUserMenu(false);
                     handleLogout();

@@ -43,6 +43,17 @@
       "role": 1,
       "createdAt": "2025-10-21T05:49:43.274Z",
       "updatedAt": "2025-10-21T05:49:43.274Z"
+    },
+    {
+      "id": "5",
+      "full_name": "aaa",
+      "email": "aaa@gmail.com",
+      "password": "0123456789",
+      "phone": "0123456789",
+      "avatar": "https://i.pravatar.cc/150?img=67",
+      "role": 1,
+      "createdAt": "2025-10-21T06:16:16.940Z",
+      "updatedAt": "2025-10-21T06:16:16.940Z"
     }
   ],
   "courses": [

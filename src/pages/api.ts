@@ -2,6 +2,18 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:3002';
 
+interface User {
+  id: string | number;
+  email: string;
+  password: string;
+  full_name: string;
+  phone?: string;
+  avatar: string;
+  role: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Tạo instance axios với cấu hình mặc định
 const api = axios.create({
   baseURL: API_URL,
@@ -46,7 +58,7 @@ export const authApi = {
     const users= usersResponse.data;
 
     //Tìm id lớn nhất
-    const maxId = users.reduce((max: number, user: any) => {
+    const maxId = users.reduce((max: number, user: User) => {
       const userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       return userId > max ? userId : max;
     }, 0);
