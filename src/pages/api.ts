@@ -44,8 +44,20 @@ export const userApi = {
 // ==== AUTH API ====
 export const authApi = {
   // Đăng nhập check email và password
-  login: (email: string, password: string) =>
-    api.get(`/users?email=${email}&password=${password}`),
+  login: async (email: string, password: string) => {
+    const response = await api.get(`/users?email=${email}`);
+    const users = response.data;
+    
+    if (users.length === 0) {
+      throw new Error('Email không tồn tại');
+    }
+    
+    const user = users[0];
+    if (user.password !== password) {
+      throw new Error('Mật khẩu không đúng');
+    }
+    return { data: [user] };
+  },
 
   // Đăng ký user mới
   register: async (userData: {
@@ -54,6 +66,7 @@ export const authApi = {
     full_name: string;
     phone?: string;
   }) => {
+    //lấy danh sách user để lấy id lớn nhất hiện tại
     const usersResponse = await api.get('/users');
     const users= usersResponse.data;
 
