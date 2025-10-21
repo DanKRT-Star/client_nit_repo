@@ -219,6 +219,10 @@ function EnrolledCourses() {
   )
 }
 
+import { PiUsersThreeFill } from "react-icons/pi";
+import { MdPlayLesson } from "react-icons/md";
+import { IoEnter } from "react-icons/io5";
+
 {/* === Available Courses === */}
 function AvailableCourses() {
   const availableCourses = [
@@ -273,7 +277,7 @@ function AvailableCourses() {
     <div>
       <h2 className="text-2xl font-bold mb-2.5">Available Courses</h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {availableCourses.map((course) => {
           return (
             <div key={course.id} className="rounded-md bg-background overflow-hidden shadow-md hover:shadow-xl">
@@ -283,12 +287,25 @@ function AvailableCourses() {
                 className="w-full aspect-video"
               />
               <article className="px-4 py-3 space-y-1">
-                <h3 className="font-semibold ">{course.title}</h3>
-                <p>👨‍🏫 {course.instructor}</p>
-                <p>📘 Lessons: {course.lessons}</p>
-                <p>
-                  👥 {course.currentStudents}/{course.maxStudents} Students
-                </p>
+                <h3 className="font-semibold truncate">{course.title}</h3>
+                <p className="text-secondary">{course.instructor}</p>
+
+                <div className="flex items-center justify-between">
+                  <p className="flex items-center">
+                    <MdPlayLesson className="w-6 h-6 mr-1"/> 
+                    {course.lessons}
+                  </p>
+
+                  <p className="flex items-center">
+                    <PiUsersThreeFill className="w-6 h-6 mr-1"/>
+                    {course.currentStudents}/{course.maxStudents}
+                  </p>
+
+                  <button className="px-4 py-2 rounded-md bg-primary text-primary flex items-center">
+                    Enroll
+                    <IoEnter className="w-6 h-6 ml-1"/>
+                  </button>
+                </div>
               </article>
             </div>
           );
