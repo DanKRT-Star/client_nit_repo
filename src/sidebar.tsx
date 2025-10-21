@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom"
+import { useAuth, UserRole } from './context/AuthContext'  // ← Thêm dòng này
+import React from 'react'
 
 interface SidebarProps {
     currentPage: string;
@@ -7,16 +9,12 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
-    const NavItems = [
-        { name: "Dashboard", icon: <HomeIcon /> },
-        { name: "Courses", icon: <BookIcon /> },
-        { name: "Lessons", icon: <LessonIcon /> },
-        { name: "Assessments", icon: <AssessmentIcon /> },
-        { name: "Challenges", icon: <ChallengeIcon /> },
-        { name: "Certification", icon: <CertificateIcon /> },
-        { name: "Project", icon: <ProjectIcon /> },
-        { name: "Download", icon: <DownloadIcon /> }
-    ]
+    const { user } = useAuth();
+    const baseUrl = user?.role === UserRole.MENTOR ? '/mentor' : '/student';
+
+    const navItems = user?.role === UserRole.MENTOR 
+  ? ['Courses', 'Students', 'Analytics']
+  : ['Courses', 'Calendar', 'Assignment', 'Blog'];
 
     return (
         <>
@@ -58,9 +56,19 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                 {/* Navigation */}
                 <nav className="flex-1 pt-6 xl:pt-6">
                     <ul className="space-y-1 px-3">
-                        {NavItems.map(({ name, icon }) => {
-                            const path = name === "Dashboard" ? "/" : `/${name.toLowerCase()}`;
+                        {navItems.map((name) => { 
+                            const path = `${baseUrl}/${name.toLowerCase()}`;  // ← Dùng baseUrl
                             const isActive = currentPage === path;
+
+                            // Map icon theo tên
+                            const iconMap: Record<string, React.ReactNode> = {
+                                'courses': <BookIcon />,
+                                'calendar': <LessonIcon />,
+                                'assignment': <AssessmentIcon />,
+                                'blog': <ChallengeIcon />,
+                                'students': <ProjectIcon />,
+                                'analytics': <AssessmentIcon />,
+                            };
 
                             return (
                             <li key={name}>
@@ -74,8 +82,8 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                                             : "text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
                                     }`}
                                 >
-                                    <span className="text-lg">{icon}</span>
-                                    <span className="text-sm">{name}</span>
+                                    <span className="text-lg">{iconMap[name.toLowerCase()] || <HomeIcon />}</span>
+                                    <span className="text-sm capitalize">{name}</span>
                                 </Link>
                             </li>
                             );
