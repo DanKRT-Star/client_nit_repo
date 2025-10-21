@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import App from './App'
 import CoursePage from './pages/coursePage'
 import CalendarPage from './pages/calendarPage'
@@ -12,7 +12,6 @@ export default function Router() {
             path: '/',
             element: <App />,
             children: [
-              { index: true, element: <Navigate to="courses" replace />  },
               { path: 'courses', element: <CoursePage /> },
               { path: 'calendar', element: <CalendarPage /> },
               { path: 'assignment', element: <AssignmentPage /> },
