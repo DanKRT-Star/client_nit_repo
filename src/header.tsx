@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth, UserRole } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
@@ -140,6 +140,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
         {/* User Menu */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2 hover:opacity-80 transition"
           >
@@ -161,6 +162,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-label="Toggle user menu"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -169,9 +171,11 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
           {/* Dropdown Menu */}
           {showUserMenu && (
             <>
-              <div
+              <button
+                type="button"
                 className="fixed inset-0 z-10"
                 onClick={() => setShowUserMenu(false)}
+                aria-label = "Close menu"
               />
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-20 border border-gray-200 dark:border-gray-700">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
@@ -196,7 +200,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                   }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-label="Profile icon">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                   </svg>
                   Thông tin cá nhân
@@ -208,7 +212,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                   }}
                   className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-label="Logout icon">
                     <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                   </svg>
                   Đăng xuất

@@ -6,7 +6,9 @@ import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import RoleBasedRoute from '../components/RoleBasedRoute';
-import { UserRole, useAuth } from '../context/AuthContext';
+import { UserRole } from '../context/AuthContext';
+import RoleRedirect from '../components/RoleRedirect';
+
 // Import các pages
 import CoursePage from '../pages/coursePage';
 import CalendarPage from '../pages/calendarPage';
@@ -81,15 +83,6 @@ const router = createBrowserRouter([
   }
 ]);
 
-// Component redirect dựa vào role
-function RoleRedirect() {
-  const { user } = useAuth();
-  
-  if (user?.role === UserRole.MENTOR) {
-    return <Navigate to="/mentor" replace />;
-  }
-  return <Navigate to="/student" replace />;
-}
 
 
 export default router;
