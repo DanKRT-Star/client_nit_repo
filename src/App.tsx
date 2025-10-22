@@ -1,5 +1,5 @@
 import './App.css'
-import { Outlet, useLocation } from 'react-router'
+import { Outlet, useLocation } from 'react-router-dom'
 import Header from './header'
 import Sidebar from './sidebar'
 import { useState } from 'react'
@@ -13,21 +13,22 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className='font-opens flex flex-col h-full max-w-[1500px] mx-auto bg-background dark:bg-gray-900 overflow-hidden'>
+    <div className='font-popins flex flex-col h-full max-w-[1500px] mx-auto bg-surface'>
         
         <Header 
           currentPage={location.pathname}
           onMenuClick={() => setIsSidebarOpen(true)}
         />
 
-        <div className='flex-1 flex overflow-hidden'>
+        <div className='relative flex-1 flex flex-col overflow-auto'>
+          <div className='flex'>
             <Sidebar 
               currentPage={location.pathname}
               isOpen={isSidebarOpen}
               onClose={() => setIsSidebarOpen(false)}
             />
             
-            <div className="main p-4 md:p-10 flex-1 flex flex-col gap-5 overflow-y-auto">
+            <div className="main flex-1 flex flex-col gap-5 overflow-y-auto">
                 {isHome && (
                     <>
                       {/* Welcome Section */}
@@ -65,10 +66,9 @@ export default function App() {
                 )}
                 <Outlet />
             </div>
+          </div>
+          <Footer/>
         </div>
-
-        <Footer />
     </div>
   )
 }
-

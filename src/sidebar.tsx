@@ -32,12 +32,13 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
 
             {/* Sidebar */}
             <div className={`
-                fixed xl:relative
+                fixed lg:sticky
+                lg:h-fit
                 top-0 left-0 h-full
-                w-64 bg-gray-50 dark:bg-gray-800
-                flex flex-col shadow-lg
+                w-64 bg-surface
+                flex flex-col
                 transform transition-transform duration-300 ease-in-out
-                z-50
+                z-40
                 ${isOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
             `}>
                 {/* Close button - Chỉ hiện trên mobile */}
@@ -45,7 +46,7 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                     <button
                         type="button"
                         onClick={onClose}
-                        className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        className="p-2 rounded-lg hover:bg-component transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-gray-800 dark:text-white" viewBox="0 0 24 24">
                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
@@ -78,8 +79,8 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                                     aria-current={isActive ? "page" : undefined}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                                         isActive 
-                                            ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium shadow-sm" 
-                                            : "text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
+                                            ? "bg-primary text-primary font-medium shadow-sm" 
+                                            : " hover:bg-component"
                                     }`}
                                 >
                                     <span className="text-lg">{iconMap[name.toLowerCase()] || <HomeIcon />}</span>
@@ -93,16 +94,16 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
 
                 {/* Unlock Premium Section */}
                 <div className="p-6">
-                    <div className="bg-white dark:bg-gray-700 rounded-lg p-4 text-center shadow-sm">
-                        <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="gray" className="dark:fill-gray-300" viewBox="0 0 24 24">
+                    <div className="bg-primary rounded-lg p-4 text-center shadow-sm">
+                        <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3z"/>
                             </svg>
                         </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
+                        <p className="text-xs text-primary mb-3 leading-relaxed">
                             Unlock Premium<br/>Resources & Features
                         </p>
-                        <button type="button" className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                        <button type="button" className="w-full bg-background font-medium py-2 px-4 rounded-lg transition-colors text-sm">
                             Upgrade
                         </button>
                     </div>
@@ -153,27 +154,11 @@ function ChallengeIcon() {
     )
 }
 
-function CertificateIcon() {
-    return (
-        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h9l-2 3v1l4-4 4 4v-1l-2-3h3c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 11.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-        </svg>
-    )
-}
 
 function ProjectIcon() {
     return (
         <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
             <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 6h-3v3h-2v-3h-3v-2h3V7h2v3h3v2z"/>
-        </svg>
-    )
-}
-
-function DownloadIcon() {
-    return (
-        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3z"/>
-            <path d="M12 15l-4 4h3v3h2v-3h3l-4-4z"/>
         </svg>
     )
 }

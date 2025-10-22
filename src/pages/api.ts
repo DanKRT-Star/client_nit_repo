@@ -14,7 +14,6 @@ interface User {
   updatedAt: string;
 }
 
-// Tạo instance axios với cấu hình mặc định
 const api = axios.create({
   baseURL: API_URL,
   headers: {
