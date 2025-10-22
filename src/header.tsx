@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from './context/AuthContext';
+import { useAuth, UserRole } from './context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
@@ -13,6 +13,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   
+  const baseUrl = user?.role === UserRole.MENTOR ? '/mentor' : '/student';
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -71,7 +73,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
         <nav className="hidden xl:block">
           <ul className="flex gap-8 items-center">
             {navItems.map((item) => {
-              const path = `/${item.toLowerCase()}`;
+              const path = `${baseUrl}/${item.toLowerCase()}`;
               const isActive = currentPage === path;
 
               return (
