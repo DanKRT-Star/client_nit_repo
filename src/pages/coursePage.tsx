@@ -8,10 +8,15 @@ export default function CurrentCourse() {
     <section className="p-4 lg:flex-1 lg:flex lg:gap-8">
       <div className="space-y-8 flex-1">
         <UpcomingCourse />
+        <div className="block lg:hidden">
+          <InstructorList />
+        </div>
         <EnrolledCourses />
         <AvailableCourses />
       </div>
-      <InstructorList />
+      <div className="hidden lg:block">
+        <InstructorList />
+      </div>
     </section>
   );
 }
@@ -374,18 +379,18 @@ function InstructorList() {
   ];
 
   return (
-    <aside className="hidden h-full lg:block">
-      <h2 className="font-semibold mb-2.5">Instructors</h2>
-      <ul>
+    <aside className="lg:h-full text-xs lg:text-sm">
+      <h2 className="font-semibold text-xl mb-2.5">Instructors</h2>
+      <ul className="flex gap-2 overflow-auto lg:block bg-background shadow-lg rounded-md">
         {instructors.map((ins) => (
-          <li key={ins.id} className="flex gap-2 border-b-2 py-4">
+          <li key={ins.id} className="w-1/2 items-center hover:bg-component flex-shrink-0 flex gap-2 px-2 py-1 lg:px-4 lg:py-2 lg:w-full">
             <img
               loading="lazy"
               src={ins.avatar}
               alt={ins.name}
               className="h-14 aspect-square rounded-full"
             />
-            <article className="instructor-info flex flex-col justify-between text-sm">
+            <article className="instructor-info flex flex-col lg:justify-between">
               <h4 className="instructor-name">{ins.name}</h4>
               <p className="instructor-expertise">
                 {ins.expertise.join(", ")}

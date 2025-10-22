@@ -21,7 +21,8 @@ export default function App() {
           onMenuClick={() => setIsSidebarOpen(true)}
         />
 
-        <div className='flex-1 flex overflow-hidden'>
+        <div className='relative flex-1 flex flex-col overflow-auto'>
+          <div className='flex'>
             <Sidebar 
               currentPage={location.pathname}
               isOpen={isSidebarOpen}
@@ -73,8 +74,9 @@ export default function App() {
                     </>
                 )}
                 <Outlet />
-                <Footer/>
             </div>
+          </div>
+          <Footer/>
         </div>
     </div>
   )

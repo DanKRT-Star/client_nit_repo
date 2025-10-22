@@ -42,29 +42,29 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="w-full z-50 flex justify-between items-center shadow-lg px-4 md:px-10 py-3 bg-white dark:bg-gray-800">
+    <header className="w-full z-50 flex justify-between items-center shadow-lg px-4 md:px-10 py-3 bg-surface">
       {/* Left side: Hamburger + Logo */}
       <div className="flex items-center gap-3 md:gap-10">
         {/* Hamburger Menu Button - Chỉ hiện trên mobile */}
         <button
           type="button"
           onClick={onMenuClick}
-          className="xl:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="xl:hidden p-2 rounded-lg hover:bg-component transition-colors"
           aria-label="Toggle menu"
         >
-          <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-gray-800 dark:text-white" viewBox="0 0 24 24">
+          <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-main" viewBox="0 0 24 24">
             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
           </svg>
         </button>
 
         {/* Logo */}
         <Link to={`/`} className="flex items-center gap-2">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-800 dark:bg-white rounded-lg flex items-center justify-center">
-              <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" className="dark:fill-gray-800" viewBox="0 0 24 24">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-primary rounded-lg flex items-center justify-center">
+              <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="text-primary" viewBox="0 0 24 24">
                 <path d="M17.5 4.5c-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-1.45-1.1-3.55-1.5-5.5-1.5zM21 18.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
               </svg>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">SkillUp</h1>
+            <h1 className="text-xl md:text-2xl font-bold">SkillUp</h1>
         </Link>
 
 
@@ -80,8 +80,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                     to={path}
                     className={`text-base font-medium transition-colors ${
                       isActive 
-                        ? 'text-gray-900 dark:text-white font-semibold' 
-                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                        ? 'font-semibold' 
+                        : 'text-secondary hover:text-main hover:font-semibold'
                     }`}
                   >
                     {item}
@@ -99,7 +99,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
             type="text" 
             placeholder="Search.." 
             aria-label="Search"
-            className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 dark:text-white border-none rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
+            className="pl-10 pr-4 py-2 bg-background border-none rounded-lg w-full text-sm focus:outline-none"
           />
           <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">
             <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -114,15 +114,15 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
         <button
           type="button"
           onClick={toggleDarkMode}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="p-2 rounded-lg hover:bg-component transition-colors"
           aria-label="Toggle dark mode"
         >
           {isDark ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" className="text-gray-800 dark:text-gray-200"></path>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="text-main md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="text-main md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 17.01c2.76 0 5.01-2.25 5.01-5.01S14.76 6.99 12 6.99 6.99 9.24 6.99 12s2.25 5.01 5.01 5.01M12 9c1.66 0 3.01 1.35 3.01 3.01s-1.35 3.01-3.01 3.01-3.01-1.35-3.01-3.01S10.34 9 12 9M13 19h-2v3h2v-3M13 2h-2v3h2V2M2 11h3v2H2zM19 11h3v2h-3zM4.22 18.36l.71.71.71.71 1.06-1.06 1.06-1.06-.71-.71-.71-.71-1.06 1.06zM19.78 5.64l-.71-.71-.71-.71-1.06 1.06-1.06 1.06.71.71.71.71 1.06-1.06zM7.76 6.34 6.7 5.28 5.64 4.22l-.71.71-.71.71L5.28 6.7l1.06 1.06.71-.71zM16.24 17.66l1.06 1.06 1.06 1.06.71-.71.71-.71-1.06-1.06-1.06-1.06-.71.71z" className="text-gray-800"></path>
             </svg>
           )}
@@ -150,15 +150,15 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
               className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-primary object-cover"
             />
             <div className="hidden lg:block text-left">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm font-semibold">
                 {user?.full_name}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-secondary">
                 {user?.email}
               </p>
             </div>
             <svg
-              className="hidden md:block w-4 h-4 text-gray-600 dark:text-gray-400"
+              className="hidden md:block w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -178,7 +178,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                 onClick={() => setShowUserMenu(false)}
                 aria-label = "Close menu"
               />
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-20 border border-gray-200 dark:border-gray-700">
+              <div className="absolute right-0 mt-2 w-56 bg-primary rounded-lg shadow-lg py-1 z-20">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
                     {user?.full_name}
