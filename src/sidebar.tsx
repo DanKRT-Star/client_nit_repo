@@ -10,9 +10,9 @@ interface SidebarProps {
 
 export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
     const { user } = useAuth();
-    const baseUrl = user?.role === UserRole.MENTOR ? '/mentor' : '/student';
+    const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
-    const navItems = user?.role === UserRole.MENTOR 
+    const navItems = user?.role === UserRole.LECTURER 
   ? ['Courses', 'Students', 'Analytics']
   : ['Courses', 'Calendar', 'Assignment', 'Blog'];
 

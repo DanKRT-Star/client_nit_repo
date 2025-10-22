@@ -1,87 +1,55 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3002';
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-interface User {
-  id: string | number;
-  email: string;
-  password: string;
-  full_name: string;
-  phone?: string;
-  avatar: string;
-  role: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
+// Tạo axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
-export const userApi = {
-  // GET - Lấy danh sách users
-  getAll: () => api.get('/users'),
 
-  // GET - Lấy user theo ID
-  getById: (id: string) => api.get(`/users/${id}`),
-
-  // POST - Tạo user mới
-  create: (userData: any) => api.post('/users', userData),
-
-  // PUT - Cập nhật toàn bộ user
-  update: (id: any, userData: any) => api.put(`/users/${id}`, userData),
-
-  // PATCH - Cập nhật một phần user
-  patch: (id: any, userData: any) => api.patch(`/users/${id}`, userData),
-
-  // DELETE - Xóa user
-  delete: (id: any) => api.delete(`/users/${id}`),
-};
+// Interceptor để thêm token vào mọi request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // ==== AUTH API ====
 export const authApi = {
-  // Đăng nhập check email và password
-  login: (email: string, password: string) =>
-    api.get(`/users?email=${email}&password=${password}`),
 
-  // Đăng ký user mới
+  login: async (email: string, password: string) => {
+    return api.post('/auth/login', { 
+      email, 
+      password 
+    });
+  },
+
   register: async (userData: {
     email: string;
     password: string;
     full_name: string;
     phone?: string;
   }) => {
-    const usersResponse = await api.get('/users');
-    const users= usersResponse.data;
-
-    //Tìm id lớn nhất
-    const maxId = users.reduce((max: number, user: User) => {
-      const userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
-      return userId > max ? userId : max;
-    }, 0);
-
-    const newUser = {
-      id: String(maxId+1),
-      ...userData,
-      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`,
-      role: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    return api.post('/users', newUser);
+    return api.post('/auth/register/student', userData);
+    // Hoặc '/auth/register/lecturer' nếu đăng ký làm mentor
   },
 
-  // Kiểm tra email có tồn tại kh
-  checkEmailExists: (email: string) =>
-    api.get(`/users?email=${email}`),
+  // Lấy thông tin user hiện tại (sau khi login)
+  getCurrentUser: () => {
+    return api.get('/auth/me');
+  },
 
-  // Lấy thông tin user theo ID
-  getUserById: (id: string) =>
-    api.get(`/users/${id}`),
+  // Kiểm tra email có tồn tại không (nếu API hỗ trợ)
+  checkEmailExists: (email: string) => {
+    // Tùy thuộc vào API của bạn
+    return api.get(`/users?email=${email}`);
+  },
 };
-
 
 export default api;
 

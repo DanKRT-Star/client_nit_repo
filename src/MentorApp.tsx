@@ -6,7 +6,7 @@ import { useAuth } from './context/AuthContext';
 
 export default function MentorApp() {
   const location = useLocation();
-  const isHome = location.pathname === '/mentor';
+  const isHome = location.pathname === '/lecturer';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
 
@@ -29,7 +29,7 @@ export default function MentorApp() {
             <section className='flex gap-2.5 rounded-lg'>
               <article>
                 <h1 className="text-3xl font-bold">
-                  Chào mừng Mentor <span className='text-primary'>{user?.full_name}</span>
+                  Chào mừng Lecturer <span className='text-primary'>{user?.full_name}</span>
                 </h1>
                 <p className="text-base">Quản lý khóa học và học viên của bạn!</p>
               </article>

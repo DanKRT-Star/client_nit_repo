@@ -56,18 +56,18 @@ const router = createBrowserRouter([
     ],
   },
 
-    // Mentor routes
+  // Lecturer routes (đổi từ /mentor)
   {
-    path: '/mentor',
+    path: '/lecturer',  // Đổi từ /mentor
     element: (
       <ProtectedRoute>
-        <RoleBasedRoute allowedRoles={[UserRole.MENTOR]}>
+        <RoleBasedRoute allowedRoles={[UserRole.LECTURER]}>
           <MentorApp />
         </RoleBasedRoute>
       </ProtectedRoute>
     ),
     children: [
-      { path: '', element: <div>Mentor Dashboard (Coming soon)</div> },
+      { path: '', element: <div>Lecturer Dashboard (Coming soon)</div> },
       { path: 'courses', element: <div>Quản lý khóa học</div> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },

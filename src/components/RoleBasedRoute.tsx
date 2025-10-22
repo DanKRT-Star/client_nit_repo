@@ -26,7 +26,7 @@ export default function RoleBasedRoute({ children, allowedRoles }: RoleBasedRout
     if (user.role === UserRole.STUDENT) {
       return <Navigate to="/student" replace />;
     } else {
-      return <Navigate to="/mentor" replace />;
+      return <Navigate to="/lecturer" replace />;
     }
   }
 
