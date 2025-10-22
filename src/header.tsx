@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from './context/AuthContext';
 import { useNavigate } from 'react-router-dom';
