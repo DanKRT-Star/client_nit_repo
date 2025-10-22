@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { authApi } from '../pages/api';
+import api, { authApi } from '../pages/api';
+import axios from 'axios';
 
 export const UserRole = {
   STUDENT: 1,
@@ -36,14 +37,15 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const normalizeRole = (apiRole: any): typeof UserRole.STUDENT | typeof UserRole.LECTURER => {
+    type ApiRole = string | number | null | undefined;
+    const normalizeRole = (apiRole: ApiRole): UserRole => {
         // API có thể trả về: "LECTURER", "lecturer", 2, "2"
         if (
             apiRole === 2 || 
             apiRole === '2' || 
             apiRole === 'LECTURER' || 
             apiRole === 'lecturer' ||
-            apiRole?.toUpperCase?.() === 'LECTURER'
+            (typeof apiRole === 'string' && apiRole.toUpperCase() === 'LECTURER')
         ) {
             return UserRole.LECTURER;
         }
@@ -74,7 +76,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                             id: String(userData.id),
                             email: userData.email,
                             full_name: userData.full_name,
-                            avatar: userData.avatar,
+                            avatar: userData.avatar || `https://i.pravatar.cc/150?u=${Math.floor(Math.random())}`,
                             role: normalizeRole(userData.role),
                             phone: userData.phone,
                             createdAt: userData.createdAt,
@@ -101,8 +103,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
         try {
             const response = await authApi.login(email, password);
             
-            console.log('🔍 Login response data:', response.data);
-            console.log('�� User role from API:', response.data?.user?.role);
+            if(import.meta.env.DEV) console.debug('Login response', response.data);
             
             if(response.data) {
                 const { user: userData, token } = response.data;
@@ -118,8 +119,10 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                     updatedAt: userData.updatedAt
                 };
                 
-                console.log('✅ Normalized role:', normalized.role);
-                console.log('✅ Is Lecturer:', normalized.role === UserRole.LECTURER);
+                if(import.meta.env.DEV){
+                    console.debug('Normalized role:', normalized.role);
+                    console.debug('Is Lecturer:', normalized.role === UserRole.LECTURER);
+                }
                 
                 setUser(normalized);
                 localStorage.setItem('user', JSON.stringify(normalized));
@@ -128,22 +131,19 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                 return {success: true, message: "Đăng nhập thành công!"};
             }
             return {success: false, message: "Đăng nhập thất bại!"};
-        } catch(error: any) {
-            console.error('❌ Login error:', error.response?.data);
-            
-            // Xử lý các loại lỗi khác nhau
-            if (error.response?.status === 401) {
-                return {
-                    success: false, 
-                    message: "Email hoặc mật khẩu không đúng!"
-                };
+        } catch(error: unknown) {
+               if (import.meta.env.DEV) console.error('Login error', error);
+               if (axios.isAxiosError(error)) {
+                    if (error.response?.status === 401) {
+                    return { success: false, message: "Email hoặc mật khẩu không đúng!" };
+                    }
+                    const message =
+                    (error.response?.data as any)?.message ??
+                    "Có lỗi xảy ra khi đăng nhập!";
+                    return { success: false, message };
+                }
+                return { success: false, message: "Có lỗi xảy ra khi đăng nhập!" };
             }
-            
-            const message = error.response?.data?.message || 
-                           "Có lỗi xảy ra khi đăng nhập!";
-            
-            return {success: false, message};
-        }
     };
 
     const register = async (data: { email: string; password: string; full_name: string; phone?: string}) => {
@@ -175,7 +175,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             }
             return {success: false, message: "Đăng ký thất bại!"};
         } catch(error: any) {
-            console.error('❌ Register error:', error.response?.data);
+            console.error('Register error:', error.response?.data);
             
             const message = error.response?.data?.message || 
                            error.response?.data?.error ||

@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from '../App';
-import MentorApp from '../MentorApp';
+import MentorApp from '../LecturerApp';
 import NotFound from '../pages/NotFound';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
@@ -14,6 +14,7 @@ import CoursePage from '../pages/coursePage';
 import CalendarPage from '../pages/calendarPage';
 import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
+import LecturerApp from '../LecturerApp';
 
 
 const router = createBrowserRouter([
@@ -62,7 +63,7 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <RoleBasedRoute allowedRoles={[UserRole.LECTURER]}>
-          <MentorApp />
+          <LecturerApp />
         </RoleBasedRoute>
       </ProtectedRoute>
     ),
