@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import api, { authApi } from '../pages/api';
+import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../pages/api'; // Thêm StudentRegisterData, LecturerRegisterData
 import axios from 'axios';
 
 export const UserRole = {
@@ -7,7 +7,7 @@ export const UserRole = {
   LECTURER: 2
 } as const;
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
+export type UserRole = typeof UserRole[keyof typeof UserRole]; // Định nghĩa UserRole type
 
 interface User {
     id: string;
@@ -27,7 +27,10 @@ interface AuthContextType {
     isStudent: boolean;
     isLecturer: boolean;
     login: (email: string, password: string) =>Promise<{success: boolean, message: string}>;
-    register: (data: {email: string; password: string; full_name: string; phone?: string}) => Promise<{success: boolean, message: string}>;
+    register: (
+            role: 'student' | 'lecturer', 
+            data: StudentRegisterData | LecturerRegisterData
+    ) => Promise<{success: boolean, message: string}>;    
     logout: ()=> void;
 }
 
@@ -38,8 +41,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
     const [isLoading, setIsLoading] = useState(true);
 
     type ApiRole = string | number | null | undefined;
-    const normalizeRole = (apiRole: ApiRole): UserRole => {
-        // API có thể trả về: "LECTURER", "lecturer", 2, "2"
+    const normalizeRole = (apiRole: ApiRole): UserRole => { 
         if (
             apiRole === 2 || 
             apiRole === '2' || 
@@ -55,51 +57,46 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
     //Kiểm tra user đã đăng nhập chưa khi load app
     useEffect(() => {
         const checkAuth = async () => {
-            const savedUser = localStorage.getItem('user');
-            const savedToken = localStorage.getItem('token');
+            const savedToken = localStorage.getItem('token'); // Chỉ cần kiểm tra token
 
-            if(savedUser && savedToken) {
+            if(savedToken) {
                 try {
-                    const parsed = JSON.parse(savedUser);
-                    // Verify: token phải khớp user.id
-                    if(String(savedToken) !== String(parsed?.id)) {
-                        localStorage.removeItem('user');
-                        localStorage.removeItem('token');
-                        setIsLoading(false);
-                        return;
-                    }
-                    // Gọi API /auth/me để lấy user hiện tại
+                    // Gọi API /auth/me để lấy user hiện tại, sử dụng token đã lưu
                     const response = await authApi.getCurrentUser();
                     if(response.data) {
                         const userData = response.data;
-                        const normalized: User = {
+                        const normalized: User = { // Chuẩn hóa dữ liệu user
                             id: String(userData.id),
                             email: userData.email,
                             full_name: userData.full_name,
-                            avatar: userData.avatar || `https://i.pravatar.cc/150?u=${Math.floor(Math.random())}`,
+                            avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.id}`, // Dùng ID thay vì Random
                             role: normalizeRole(userData.role),
                             phone: userData.phone,
                             createdAt: userData.createdAt,
                             updatedAt: userData.updatedAt,
                         };
                         setUser(normalized);
+                        // Cập nhật localStorage: chỉ lưu user data, không lưu token vào user object
+                        localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
                     }
                     else {
-                        localStorage.removeItem('user');
+                        // Token có nhưng API /me không thành công, xóa token
                         localStorage.removeItem('token');
                     }
                 }catch(error){
+                    // Lỗi API (token hết hạn,...)
                     console.error("Auth check failed:", error);
-                    localStorage.removeItem('user');
                     localStorage.removeItem('token');
                 }
             }
+            // Loại bỏ logic kiểm tra savedUser & savedToken khớp nhau (token không nên là user.id)
+            localStorage.removeItem('user'); // Xóa savedUser cũ nếu có
             setIsLoading(false);
         };
         checkAuth();
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string) => { // Xử lý login
         try {
             const response = await authApi.login(email, password);
             
@@ -108,7 +105,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             if(response.data) {
                 const { user: userData, token } = response.data;
                 
-                const normalized: User = {
+                const normalized: User = { // Chuẩn hóa user data
                     id: String(userData.id),
                     email: userData.email,
                     full_name: userData.full_name,
@@ -119,13 +116,9 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                     updatedAt: userData.updatedAt
                 };
                 
-                if(import.meta.env.DEV){
-                    console.debug('Normalized role:', normalized.role);
-                    console.debug('Is Lecturer:', normalized.role === UserRole.LECTURER);
-                }
-                
                 setUser(normalized);
-                localStorage.setItem('user', JSON.stringify(normalized));
+                // CHỈ lưu token và một phần user data (id, role)
+                localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
                 localStorage.setItem('token', token);
                 
                 return {success: true, message: "Đăng nhập thành công!"};
@@ -133,7 +126,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             return {success: false, message: "Đăng nhập thất bại!"};
         } catch(error: unknown) {
                if (import.meta.env.DEV) console.error('Login error', error);
-               if (axios.isAxiosError(error)) {
+               if (axios.isAxiosError(error)) { // Xử lý lỗi Axios
                     if (error.response?.status === 401) {
                     return { success: false, message: "Email hoặc mật khẩu không đúng!" };
                     }
@@ -146,17 +139,41 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             }
     };
 
-    const register = async (data: { email: string; password: string; full_name: string; phone?: string}) => {
+    const register = async (
+        role: 'student' | 'lecturer',
+        data: StudentRegisterData | LecturerRegisterData // Type Safety đã được cải thiện
+    ) => {
         try {
-            // Không cần check email exists nữa, để API backend xử lý
-            const response = await authApi.register(data);
+            let response;
+            // Tách các trường không cần thiết cho API (confirmPassword đã được loại bỏ ở RegisterPage)
+            const { confirmPassword, enrollmentYear, title: rawTitle, className, major, studentCode, lecturerCode, department, bio, ...commonData } = data as any; 
 
-            console.log('✅ Register response:', response.data);
+            if (role === 'student') {
+                const studentData: StudentRegisterData = {
+                    ...commonData, 
+                    studentCode,
+                    major,
+                    className,
+                    enrollmentYear: enrollmentYear ? Number(enrollmentYear) : undefined 
+                };
+                response = await authApi.registerStudent(studentData); // Gọi API registerStudent
+            } else { // role === 'lecturer'
+                const lecturerData: LecturerRegisterData = {
+                    ...commonData, 
+                    lecturerCode,
+                    department,
+                    title: rawTitle,
+                    bio,
+                };
+                response = await authApi.registerLecturer(lecturerData); // Gọi API registerLecturer
+            }
+
+            console.log(`✅ Register ${role} response:`, response.data);
 
             if(response.data) {
                 const { user: userData, token } = response.data;
                 
-                const normalized: User = {
+                const normalized: User = { // Chuẩn hóa user data
                     id: String(userData.id),
                     email: userData.email,
                     full_name: userData.full_name,
@@ -168,7 +185,8 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                 };
 
                 setUser(normalized);
-                localStorage.setItem('user', JSON.stringify(normalized));
+                // CHỈ lưu token và một phần user data
+                localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
                 localStorage.setItem('token', token);
 
                 return {success: true, message: "Đăng ký thành công!"};
@@ -178,14 +196,14 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             console.error('Register error:', error.response?.data);
             
             const message = error.response?.data?.message || 
-                           error.response?.data?.error ||
-                           "Có lỗi xảy ra khi đăng ký!";
+                            error.response?.data?.error ||
+                            "Có lỗi xảy ra khi đăng ký!";
             
-            return {success: false, message};
+            return {success: false, message}; // Bắt lỗi và trả về object thay vì throw
         }
     };
 
-    const logout = () => {
+    const logout = () => { // Xử lý logout
         setUser(null);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
@@ -194,7 +212,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
     return (
         <AuthContext.Provider value = {{
             user,
-            isAuthenticated: !!user,
+            isAuthenticated: !!user, // Giá trị dẫn xuất
             isLoading,
             isStudent: user?.role === UserRole.STUDENT,
             isLecturer: user?.role === UserRole.LECTURER,
@@ -208,7 +226,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
 };
 
 
-export const useAuth = () => {
+export const useAuth = () => { // Custom hook useAuth
     const context = useContext(AuthContext);
     if (context === undefined) {
         throw new Error('useAuth must be used with an AuthProvider');

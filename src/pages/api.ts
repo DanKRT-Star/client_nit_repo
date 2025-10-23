@@ -22,6 +22,29 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Định nghĩa Types cho dữ liệu đăng ký
+export type StudentRegisterData = {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+    studentCode: string;
+    major?: string;
+    enrollmentYear?: number;
+    className?: string;
+}
+
+export type LecturerRegisterData = {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+    lecturerCode: string;
+    department?: string;
+    title: 'TA' | 'LECTURER' | 'SENIOR_LECTURER' | 'ASSOCIATE_PROFESSOR' | 'PROFESSOR';
+    bio?: string;
+}
+
 // ==== AUTH API ====
 export const authApi = {
 
@@ -32,14 +55,14 @@ export const authApi = {
     });
   },
 
-  register: async (userData: {
-    email: string;
-    password: string;
-    full_name: string;
-    phone?: string;
-  }) => {
-    return api.post('/auth/register/student', userData);
-    // Hoặc '/auth/register/lecturer' nếu đăng ký làm mentor
+  // Register Student
+  registerStudent: async (data: StudentRegisterData) => {
+    return api.post('/auth/register/student', data);
+  },
+
+  // Register Lecturer
+  registerLecturer: async (data: LecturerRegisterData) => {
+    return api.post('/auth/register/lecturer', data);
   },
 
   // Lấy thông tin user hiện tại (sau khi login)
@@ -55,4 +78,3 @@ export const authApi = {
 };
 
 export default api;
-
