@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from '../App';
-import MentorApp from '../MentorApp';
+import MentorApp from '../LecturerApp';
 import NotFound from '../pages/NotFound';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
@@ -14,6 +14,7 @@ import CoursePage from '../pages/coursePage';
 import CalendarPage from '../pages/calendarPage';
 import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
+import LecturerApp from '../LecturerApp';
 
 
 const router = createBrowserRouter([
@@ -56,18 +57,18 @@ const router = createBrowserRouter([
     ],
   },
 
-    // Mentor routes
+  // Lecturer routes (đổi từ /mentor)
   {
-    path: '/mentor',
+    path: '/lecturer',  // Đổi từ /mentor
     element: (
       <ProtectedRoute>
-        <RoleBasedRoute allowedRoles={[UserRole.MENTOR]}>
-          <MentorApp />
+        <RoleBasedRoute allowedRoles={[UserRole.LECTURER]}>
+          <LecturerApp />
         </RoleBasedRoute>
       </ProtectedRoute>
     ),
     children: [
-      { path: '', element: <div>Mentor Dashboard (Coming soon)</div> },
+      { path: '', element: <div>Lecturer Dashboard (Coming soon)</div> },
       { path: 'courses', element: <div>Quản lý khóa học</div> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },

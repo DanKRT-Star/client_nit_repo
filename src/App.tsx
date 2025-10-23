@@ -20,7 +20,7 @@ export default function App() {
           onMenuClick={() => setIsSidebarOpen(true)}
         />
 
-        <div className='relative flex-1 flex flex-col overflow-auto'>
+        <div className='relative flex-1 flex flex-col'>
           <div className='flex'>
             <Sidebar 
               currentPage={location.pathname}

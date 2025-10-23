@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from './context/AuthContext';
+import { useAuth, UserRole } from './context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
@@ -9,10 +9,12 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
-  const { user, logout, isMentor } = useAuth();
+  const { user, logout, isLecturer } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   
+  const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -71,7 +73,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
         <nav className="hidden xl:block">
           <ul className="flex gap-8 items-center">
             {navItems.map((item) => {
-              const path = `/${item.toLowerCase()}`;
+              const path = `${baseUrl}/${item.toLowerCase()}`;
               const isActive = currentPage === path;
 
               return (
@@ -130,11 +132,11 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
 
         {/* User Role Badge - Hidden on mobile */}
         <span className={`hidden md:inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-          isMentor 
+          isLecturer 
             ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
             : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
         }`}>
-          {isMentor ? 'Mentor' : 'Student'}
+          {isLecturer ? 'Lecturer' : 'Student'}
         </span>
 
         {/* User Menu */}
@@ -178,48 +180,73 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                 onClick={() => setShowUserMenu(false)}
                 aria-label = "Close menu"
               />
-              <div className="absolute right-0 mt-2 w-56 bg-primary rounded-lg shadow-lg py-1 z-20">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {user?.full_name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {user?.email}
-                  </p>
-                  <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-semibold ${
-                    isMentor 
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
-                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-20">
+                {/* User Info Section */}
+                <div className="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-800 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center gap-3 mb-2">
+                    <img
+                      src={user?.avatar}
+                      alt={user?.full_name || 'User avatar'}
+                      className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 shadow-md object-cover"
+                    />
+                  <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        {user?.full_name}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                        {user?.email}
+                      </p>
+                  </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                    isLecturer 
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' 
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                   }`}>
-                    {isMentor ? 'Mentor' : 'Student'}
+                    {isLecturer ? 'Lecturer' : 'Student'}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    // Navigate to profile page (nếu có)
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-label="Profile icon">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-                  </svg>
-                  Thông tin cá nhân
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowUserMenu(false);
-                    handleLogout();
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-label="Logout icon">
-                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-                  </svg>
-                  Đăng xuất
-                </button>
+
+                {/* Menu Items */}
+                <div className="py-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      // Navigate to profile page (nếu có)
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors duration-150 flex items-center gap-3 group"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900 group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" className="text-blue-600 dark:text-blue-400" role="img" aria-labelledby="svg-profile-title">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Thông tin cá nhân</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Xem và chỉnh sửa hồ sơ</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      handleLogout();
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150 flex items-center gap-3 group"
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" className="text-red-600 dark:text-red-400" role="img" aria-labelledby="svg-logout-title">
+                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Đăng xuất</p>
+                      <p className="text-xs text-red-500/70 dark:text-red-400/70">Thoát khỏi tài khoản</p>
+                    </div>
+                  </button>
+                </div>
               </div>
             </>
           )}

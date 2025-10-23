@@ -10,9 +10,9 @@ interface SidebarProps {
 
 export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
     const { user } = useAuth();
-    const baseUrl = user?.role === UserRole.MENTOR ? '/mentor' : '/student';
+    const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
-    const navItems = user?.role === UserRole.MENTOR 
+    const navItems = user?.role === UserRole.LECTURER 
   ? ['Courses', 'Students', 'Analytics']
   : ['Courses', 'Calendar', 'Assignment', 'Blog'];
 
@@ -91,23 +91,6 @@ export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) 
                         })}
                     </ul>
                 </nav>
-
-                {/* Unlock Premium Section */}
-                <div className="p-6">
-                    <div className="bg-primary rounded-lg p-4 text-center shadow-sm">
-                        <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-3">
-                            <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3v3H9V7c0-1.66 1.34-3 3-3z"/>
-                            </svg>
-                        </div>
-                        <p className="text-xs text-primary mb-3 leading-relaxed">
-                            Unlock Premium<br/>Resources & Features
-                        </p>
-                        <button type="button" className="w-full bg-background font-medium py-2 px-4 rounded-lg transition-colors text-sm">
-                            Upgrade
-                        </button>
-                    </div>
-                </div>
             </div>
         </>
     )

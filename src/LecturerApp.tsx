@@ -4,7 +4,7 @@ import Sidebar from './sidebar';
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 
-export default function MentorApp() {
+export default function LecturerApp() {
   const location = useLocation();
   const isHome = location.pathname === '/lecturer';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
