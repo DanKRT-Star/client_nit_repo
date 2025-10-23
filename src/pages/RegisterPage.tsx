@@ -92,7 +92,7 @@ export default function RegisterPage() {
   };
 
   return ( // JSX giữ nguyên
-    <div className="h-full  flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="h-full w-full  flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="h-full overflow-auto max-w-lg w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
         {/* Header */}
         <div className="text-center mb-8">
