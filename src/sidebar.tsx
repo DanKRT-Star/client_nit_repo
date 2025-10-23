@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom"
-import { useAuth, UserRole } from './context/AuthContext'  // ← Thêm dòng này
+import { useAuth } from './context/AuthContext'  // ← Thêm dòng này
+import { UserRole } from './context/authUtils';
 import React from 'react'
 
 interface SidebarProps {

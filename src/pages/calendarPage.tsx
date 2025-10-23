@@ -134,7 +134,7 @@ const CalendarGrid: React.FC<CalendarDateProps> = ({ currentDate }) => {
           <div key={day.toString()} className="flex-1 border-r relative">
             <div className="border-b text-center py-2 bg-background" style={{ height: HEADER_HEIGHT }}>
               <div className="font-medium text-sm">{day.format("ddd")}</div>
-              <div className={`text-lg ${day.isSame(now, "day") ? "font-bold text-primary" : ""}`}>
+              <div className={`text-lg ${day.isSame(now, "day") ? "font-bold" : ""}`}>
                 {day.format("D")}
               </div>
             </div>

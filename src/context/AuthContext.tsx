@@ -1,24 +1,13 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { authApi } from '../pages/api';
+import { authApi, type StudentRegisterData, type LecturerRegisterData } from '../pages/api'; 
 import axios from 'axios';
 
-export const UserRole = {
-  STUDENT: 1,
-  LECTURER: 2
-} as const;
+// ----------------------------------------------------------------------
+// IMPORT TỪ FILE MỚI:
+import { UserRole, type User, normalizeRole } from './authUtils'; 
+// ----------------------------------------------------------------------
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
-
-interface User {
-    id: string;
-    email: string;
-    full_name: string;
-    avatar: string;
-    role: typeof UserRole.STUDENT | typeof UserRole.LECTURER;
-    phone?: string;
-    createdAt: string;
-    updatedAt?: string;
-}
+// ĐÃ BỎ UserRole, User, normalizeRole khỏi file này
 
 interface AuthContextType {
     user: User | null;
@@ -27,7 +16,10 @@ interface AuthContextType {
     isStudent: boolean;
     isLecturer: boolean;
     login: (email: string, password: string) =>Promise<{success: boolean, message: string}>;
-    register: (data: {email: string; password: string; full_name: string; phone?: string}) => Promise<{success: boolean, message: string}>;
+    register: (
+            role: 'student' | 'lecturer', 
+            data: StudentRegisterData | LecturerRegisterData
+    ) => Promise<{success: boolean, message: string}>;    
     logout: ()=> void;
 }
 
@@ -37,42 +29,19 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    type ApiRole = string | number | null | undefined;
-    const normalizeRole = (apiRole: ApiRole): UserRole => {
-        // API có thể trả về: "LECTURER", "lecturer", 2, "2"
-        if (
-            apiRole === 2 || 
-            apiRole === '2' || 
-            apiRole === 'LECTURER' || 
-            apiRole === 'lecturer' ||
-            (typeof apiRole === 'string' && apiRole.toUpperCase() === 'LECTURER')
-        ) {
-            return UserRole.LECTURER;
-        }
-        return UserRole.STUDENT;
-    };
+    // ĐÃ BỎ normalizeRole khỏi đây
 
     //Kiểm tra user đã đăng nhập chưa khi load app
     useEffect(() => {
         const checkAuth = async () => {
-            const savedUser = localStorage.getItem('user');
-            const savedToken = localStorage.getItem('token');
+            const savedToken = localStorage.getItem('token'); 
 
-            if(savedUser && savedToken) {
+            if(savedToken) {
                 try {
-                    const parsed = JSON.parse(savedUser);
-                    // Verify: token phải khớp user.id
-                    if(String(savedToken) !== String(parsed?.id)) {
-                        localStorage.removeItem('user');
-                        localStorage.removeItem('token');
-                        setIsLoading(false);
-                        return;
-                    }
-                    // Gọi API /auth/me để lấy user hiện tại
                     const response = await authApi.getCurrentUser();
                     if(response.data) {
                         const userData = response.data;
-                        const normalized: User = {
+                        const normalized: User = { 
                             id: String(userData.id),
                             email: userData.email,
                             full_name: userData.full_name || userData.fullName,
@@ -83,23 +52,23 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                             updatedAt: userData.updatedAt,
                         };
                         setUser(normalized);
+                        localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
                     }
                     else {
-                        localStorage.removeItem('user');
                         localStorage.removeItem('token');
                     }
                 }catch(error){
                     console.error("Auth check failed:", error);
-                    localStorage.removeItem('user');
                     localStorage.removeItem('token');
                 }
             }
+            localStorage.removeItem('user'); 
             setIsLoading(false);
         };
         checkAuth();
-    }, []);
+    }, []); // Cảnh báo ESLint đã được xử lý (không cần thêm normalizeRole vào deps)
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string) => { 
         try {
             const response = await authApi.login(email, password);
             
@@ -108,7 +77,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             if(response.data) {
                 const { user: userData, token } = response.data;
                 
-                const normalized: User = {
+                const normalized: User = { 
                     id: String(userData.id),
                     email: userData.email,
                     full_name: userData.full_name || userData.fullName,
@@ -119,13 +88,8 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                     updatedAt: userData.updatedAt
                 };
                 
-                if(import.meta.env.DEV){
-                    console.debug('Normalized role:', normalized.role);
-                    console.debug('Is Lecturer:', normalized.role === UserRole.LECTURER);
-                }
-                
                 setUser(normalized);
-                localStorage.setItem('user', JSON.stringify(normalized));
+                localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
                 localStorage.setItem('token', token);
                 
                 return {success: true, message: "Đăng nhập thành công!"};
@@ -133,7 +97,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             return {success: false, message: "Đăng nhập thất bại!"};
         } catch(error: unknown) {
                if (import.meta.env.DEV) console.error('Login error', error);
-               if (axios.isAxiosError(error)) {
+               if (axios.isAxiosError(error)) { 
                     if (error.response?.status === 401) {
                     return { success: false, message: "Email hoặc mật khẩu không đúng!" };
                     }
@@ -146,17 +110,40 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             }
     };
 
-    const register = async (data: { email: string; password: string; full_name: string; phone?: string}) => {
+    const register = async (
+        role: 'student' | 'lecturer',
+        data: StudentRegisterData | LecturerRegisterData 
+    ) => {
         try {
-            // Không cần check email exists nữa, để API backend xử lý
-            const response = await authApi.register(data);
+            let response;
+            const { confirmPassword, enrollmentYear, title: rawTitle, className, major, studentCode, lecturerCode, department, bio, ...commonData } = data as any; 
 
-            console.log('✅ Register response:', response.data);
+            if (role === 'student') {
+                const studentData: StudentRegisterData = {
+                    ...commonData, 
+                    studentCode,
+                    major,
+                    className,
+                    enrollmentYear: enrollmentYear ? Number(enrollmentYear) : undefined 
+                };
+                response = await authApi.registerStudent(studentData); 
+            } else { 
+                const lecturerData: LecturerRegisterData = {
+                    ...commonData, 
+                    lecturerCode,
+                    department,
+                    title: rawTitle,
+                    bio,
+                };
+                response = await authApi.registerLecturer(lecturerData); 
+            }
+
+            console.log(`✅ Register ${role} response:`, response.data);
 
             if(response.data) {
                 const { user: userData, token } = response.data;
                 
-                const normalized: User = {
+                const normalized: User = { 
                     id: String(userData.id),
                     email: userData.email,
                     full_name: userData.full_name || userData.fullName,
@@ -168,7 +155,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                 };
 
                 setUser(normalized);
-                localStorage.setItem('user', JSON.stringify(normalized));
+                localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
                 localStorage.setItem('token', token);
 
                 return {success: true, message: "Đăng ký thành công!"};
@@ -178,14 +165,14 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
             console.error('Register error:', error.response?.data);
             
             const message = error.response?.data?.message || 
-                           error.response?.data?.error ||
-                           "Có lỗi xảy ra khi đăng ký!";
+                            error.response?.data?.error ||
+                            "Có lỗi xảy ra khi đăng ký!";
             
-            return {success: false, message};
+            return {success: false, message}; 
         }
     };
 
-    const logout = () => {
+    const logout = () => { 
         setUser(null);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
@@ -194,7 +181,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
     return (
         <AuthContext.Provider value = {{
             user,
-            isAuthenticated: !!user,
+            isAuthenticated: !!user, 
             isLoading,
             isStudent: user?.role === UserRole.STUDENT,
             isLecturer: user?.role === UserRole.LECTURER,
@@ -208,7 +195,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
 };
 
 
-export const useAuth = () => {
+export const useAuth = () => { 
     const context = useContext(AuthContext);
     if (context === undefined) {
         throw new Error('useAuth must be used with an AuthProvider');
