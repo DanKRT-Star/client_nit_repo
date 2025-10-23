@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth, UserRole } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
+import { UserRole } from './context/authUtils';
 import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {

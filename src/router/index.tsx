@@ -1,12 +1,11 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from '../App';
-import MentorApp from '../LecturerApp';
 import NotFound from '../pages/NotFound';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import RoleBasedRoute from '../components/RoleBasedRoute';
-import { UserRole } from '../context/AuthContext';
+import { UserRole } from '../context/authUtils';
 import RoleRedirect from '../components/RoleRedirect';
 
 // Import các pages
