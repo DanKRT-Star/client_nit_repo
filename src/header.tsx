@@ -189,14 +189,14 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                       alt={user?.full_name || 'User avatar'}
                       className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 shadow-md object-cover"
                     />
-                    <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                         {user?.full_name}
                       </p>
                       <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
                         {user?.email}
                       </p>
-                    </div>
+                  </div>
                   </div>
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                     isLecturer 

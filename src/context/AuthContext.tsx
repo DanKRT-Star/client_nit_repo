@@ -44,10 +44,9 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                         const normalized: User = { 
                             id: String(userData.id),
                             email: userData.email,
-                            full_name: userData.full_name,
-                            // Gọi normalizeRole đã được import
-                            avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.id}`,
-                            role: normalizeRole(userData.role), 
+                            full_name: userData.full_name || userData.fullName,
+                            avatar: userData.avatar || `https://i.pravatar.cc/150?u=${Math.floor(Math.random())}`,
+                            role: normalizeRole(userData.role),
                             phone: userData.phone,
                             createdAt: userData.createdAt,
                             updatedAt: userData.updatedAt,
@@ -81,7 +80,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                 const normalized: User = { 
                     id: String(userData.id),
                     email: userData.email,
-                    full_name: userData.full_name,
+                    full_name: userData.full_name || userData.fullName,
                     avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
                     role: normalizeRole(userData.role),
                     phone: userData.phone,
@@ -147,7 +146,7 @@ export const AuthProvider = ({ children }: {children: ReactNode}) => {
                 const normalized: User = { 
                     id: String(userData.id),
                     email: userData.email,
-                    full_name: userData.full_name,
+                    full_name: userData.full_name || userData.fullName,
                     avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
                     role: normalizeRole(userData.role),
                     phone: userData.phone,
