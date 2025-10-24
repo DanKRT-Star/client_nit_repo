@@ -3,11 +3,11 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Header from './header'
 import Sidebar from './sidebar'
 import { useState } from 'react'
-import { useAuth } from './context/AuthContext'
 import Footer from './footer'
+import { useAuthStore } from './stores/authStore'
 
 export default function App() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const location = useLocation();
   const isHome = location.pathname === '/student';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'
+import { useAuthStore } from '../stores/authStore';
 
 export default function LoginPage(){
     const [email, setEmail] = useState('');
@@ -8,7 +8,7 @@ export default function LoginPage(){
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const { login } = useAuth();
+    const login = useAuthStore(state => state.login);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -43,92 +43,117 @@ export default function LoginPage(){
             setIsLoading(false);
         }
     }
+    
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indogo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-            <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8">
-                {/* Header */}
-                <div className='text-center mb-8'>
-                    <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-2'>
-                        Đăng nhập
-                    </h1>
-                    <p className='text-gray-600 dark:text-gray-400'>
-                        Chào mừng bạn trở lại!
-                    </p>
+        <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+            {/* Animated background decorations */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+            </div>
+
+            <div className="max-w-md w-full bg-surface rounded-2xl shadow-2xl overflow-hidden border border-color/50 relative z-10 backdrop-blur-sm transform transition-all duration-300 hover:shadow-xl">
+                {/* Logo Header */}
+                <div className="bg-primary px-8 py-6 relative overflow-hidden">
+                    {/* Shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shine"></div>
+                    
+                    <div className="flex items-center justify-center gap-3 relative z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="text-primary" viewBox="0 0 24 24">
+                            <path d="M17.5 4.5c-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-1.45-1.1-3.55-1.5-5.5-1.5zM21 18.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
+                        </svg>
+                        <h1 className="text-3xl font-bold text-primary">SkillUp</h1>
+                    </div>
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                    <div className='mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md'>
-                        {error}
+                <div className="px-8 py-8">
+                    {/* Title */}
+                    <div className='text-center mb-6'>
+                        <h2 className='text-3xl font-bold text-main mb-2'>
+                            Đăng nhập
+                        </h2>
+                        <p className='text-secondary text-sm'>
+                            Chào mừng bạn trở lại!
+                        </p>
                     </div>
-                )}
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className='space-y-6'>
-                    {/* Email */}
-                    <div>
-                        <label htmlFor="email" className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                            Email
-                        </label>
-                        <input 
-                            type="email"
-                            id='email'
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className='w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-s-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white'
-                            placeholder='example@gmail.com'
+                    {/* Error Message */}
+                    {error && (
+                        <div className='mb-4 p-3 bg-background border-2 border-primary rounded-lg text-main text-sm font-medium'>
+                            ⚠️ {error}
+                        </div>
+                    )}
+
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} className='space-y-5'>
+                        {/* Email */}
+                        <div>
+                            <label htmlFor="email" className='block text-sm font-medium text-main mb-2'>
+                                Email
+                            </label>
+                            <input 
+                                type="email"
+                                id='email'
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className='w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all'
+                                placeholder='example@gmail.com'
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                            <label htmlFor="password" className='block text-sm font-medium text-main mb-2'>
+                                Mật khẩu
+                            </label>
+                            <input
+                                id='password' 
+                                type="password"
+                                value={password}
+                                onChange = {(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all"
+                                placeholder='••••••••'
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
                             disabled={isLoading}
-                         />
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label htmlFor="password" className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
-                            Mật khẩu
-                        </label>
-                        <input
-                            id='password' 
-                            type="password"
-                            value={password}
-                            onChange = {(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            placeholder='********'
-                            disabled={isLoading}
-                        />
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-                    </button>
-                </form>
-                {/* Quick Login Info */}
-                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-semibold">
-                        Tài khoản demo:
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Student: student@example.com / student123
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Mentor: mentor@example.com / mentor123
-                    </p>
-                </div>
-                {/* Register Link */}
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Chưa có tài khoản?{' '}
-                        <Link
-                        to="/register"
-                        className="text-blue-600 hover:text-blue-700 font-semibold"
+                            className="w-full bg-primary text-primary font-semibold py-3 px-4 rounded-lg hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-6 relative overflow-hidden group"
                         >
-                        Đăng ký ngay
-                        </Link>
-                    </p>
+                            <span className="relative z-10">{isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                        </button>
+                    </form>
+
+                    {/* Quick Login Info */}
+                    <div className="mt-6 p-4 bg-background border border-color rounded-lg">
+                        <p className="text-sm text-main mb-2 font-semibold">
+                            Tài khoản demo:
+                        </p>
+                        <p className="text-xs text-secondary mb-1">
+                            Student: student@example.com / student123
+                        </p>
+                        <p className="text-xs text-secondary">
+                            Mentor: mentor@example.com / mentor123
+                        </p>
+                    </div>
+
+                    {/* Register Link */}
+                    <div className="mt-6 text-center">
+                        <p className="text-sm text-secondary">
+                            Chưa có tài khoản?{' '}
+                            <Link
+                                to="/register"
+                                className="text-main hover:underline font-semibold"
+                            >
+                                Đăng ký ngay
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

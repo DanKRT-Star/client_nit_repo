@@ -2,13 +2,13 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Header from './header';
 import Sidebar from './sidebar';
 import { useState } from 'react';
-import { useAuth } from './context/AuthContext';
+import { useAuthStore } from './stores/authStore';
 
 export default function LecturerApp() {
   const location = useLocation();
   const isHome = location.pathname === '/lecturer';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
 
   return (
     <div className='font-opens flex flex-col h-full max-w-[1500px] mx-auto bg-background dark:bg-gray-900 overflow-hidden'>

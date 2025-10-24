@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import { UserRole } from '../context/authUtils';
 import type { ReactNode } from 'react';
 
@@ -9,7 +9,8 @@ interface RoleBasedRouteProps {
 }
 
 export default function RoleBasedRoute({ children, allowedRoles }: RoleBasedRouteProps) {
-  const { user, isLoading } = useAuth();
+  const isLoading = useAuthStore(state => state.isLoading);
+  const user = useAuthStore(state => state.user);  
 
   if (isLoading) {
     return (

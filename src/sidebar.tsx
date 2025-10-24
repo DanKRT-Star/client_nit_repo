@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
-import { useAuth } from './context/AuthContext'  // ← Thêm dòng này
 import { UserRole } from './context/authUtils';
 import React from 'react'
+import { useAuthStore } from "./stores/authStore";
 
 interface SidebarProps {
     currentPage: string;
@@ -10,7 +10,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
-    const { user } = useAuth();
+    const user = useAuthStore(state => state.user);
     const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
     const navItems = user?.role === UserRole.LECTURER 

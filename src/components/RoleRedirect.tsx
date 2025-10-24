@@ -1,9 +1,9 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../context/authUtils';
+import { useAuthStore } from '../stores/authStore';
 
 export default function RoleRedirect() {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   return user?.role === UserRole.LECTURER
     ? <Navigate to="/lecturer" replace />
     : <Navigate to="/student" replace />;

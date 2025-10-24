@@ -1,12 +1,15 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
 }
 
 export default function ProtectedRoute ({children}: ProtectedRouteProps) {
-    const {isAuthenticated, isLoading} = useAuth();
+    const user = useAuthStore(state => state.user);
+    const isAuthenticated = !!user;
+    const isLoading = useAuthStore(state => state.isLoading);
+
     const location = useLocation();
 
 
