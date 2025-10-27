@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { UserRole } from '../context/authUtils';
+import { UserRole } from '../util/authUtils';
 import { useAuthStore } from '../stores/authStore';
 
 export default function RoleRedirect() {

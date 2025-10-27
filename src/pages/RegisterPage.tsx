@@ -1,83 +1,82 @@
-import { useState, type FormEvent } from 'react';
+import { useState, forwardRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
+import { useForm, type FieldError } from 'react-hook-form';
+import { useRegisterStudent, useRegisterLecturer } from '../hooks/useAuthQuery';
+import type { StudentRegisterData, LecturerRegisterData } from '../pages/api';
+
+type RegisterFormData = {
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phone?: string;
+  // student
+  studentCode?: string;
+  major?: string;
+  enrollmentYear?: string;
+  className?: string;
+  // lecturer
+  lecturerCode?: string;
+  department?: string;
+  title?: 'TA' | 'LECTURER' | 'SENIOR_LECTURER' | 'ASSOCIATE_PROFESSOR' | 'PROFESSOR';
+  bio?: string;
+};
 
 export default function RegisterPage() {
   const [role, setRole] = useState<'student' | 'lecturer'>('student');
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState<any>({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    // student
-    studentCode: '',
-    major: '',
-    enrollmentYear: '',
-    className: '',
-    // lecturer
-    lecturerCode: '',
-    department: '',
-    title: 'LECTURER',
-    bio: '',
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting }, reset } = useForm<RegisterFormData>({
+    defaultValues: {
+      title: 'LECTURER'
+    }
   });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const register = useAuthStore(state => state.register);
+  const registerStudentMutation = useRegisterStudent();
+  const registerLecturerMutation = useRegisterLecturer();
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { // Xử lý thay đổi form
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const currentMutation = role === 'student' ? registerStudentMutation : registerLecturerMutation;
+  const password = watch('password');
+
+  // Reset form khi đổi role
+  const handleRoleChange = (newRole: 'student' | 'lecturer') => {
+    setRole(newRole);
+    reset();
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    // --- Client-side validation ---
-    if (!formData.fullName || !formData.email || !formData.password) {
-      setError('Vui lòng nhập đầy đủ thông tin bắt buộc!');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError('Mật khẩu phải có ít nhất 8 ký tự!');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp!');
-      setIsLoading(false);
-      return;
-    }
-    // --- End validation ---
-
-    // Loại bỏ confirmPassword trước khi gửi API
-    const { confirmPassword, ...data } = formData;
+  const onSubmit = async (data: RegisterFormData) => {
+    const { confirmPassword, enrollmentYear, ...restData } = data;
     
-    // Logic mới: Gọi register và kiểm tra kết quả trả về
     try {
-        const result = await register(role, data); // Gọi hàm register
+      if (role === 'student') {
+        const studentData: StudentRegisterData = {
+          fullName: restData.fullName,
+          email: restData.email,
+          password: restData.password,
+          phone: restData.phone,
+          studentCode: restData.studentCode!,
+          major: restData.major,
+          className: restData.className,
+          enrollmentYear: enrollmentYear ? Number(enrollmentYear) : undefined
+        };
+        await registerStudentMutation.mutateAsync(studentData);
+      } else {
+        const lecturerData: LecturerRegisterData = {
+          fullName: restData.fullName,
+          email: restData.email,
+          password: restData.password,
+          phone: restData.phone,
+          lecturerCode: restData.lecturerCode!,
+          department: restData.department,
+          title: restData.title!,
+          bio: restData.bio,
+        };
+        await registerLecturerMutation.mutateAsync(lecturerData);
+      }
 
-        if (result.success) {
-            alert('Đăng ký thành công!');
-            navigate('/'); // Chuyển hướng về trang chủ sau khi đăng ký thành công và đã login
-        } else {
-            setError(result.message); // Hiển thị lỗi từ API trả về
-        }
-    } catch (err) {
-        // Lỗi này chỉ bắt các lỗi không liên quan đến API (rất hiếm)
-        console.error('Unexpected register error:', err);
-        setError('Đã xảy ra lỗi không mong muốn trong quá trình đăng ký.');
-    } finally {
-      setIsLoading(false);
+      alert('Đăng ký thành công!');
+      navigate('/');
+    } catch (err: any) {
+      console.error('Register error:', err);
     }
   };
 
@@ -93,7 +92,6 @@ export default function RegisterPage() {
       <div className="max-w-lg w-full bg-surface rounded-2xl shadow-2xl overflow-hidden my-4 border border-color/50 relative z-10 backdrop-blur-sm transform transition-all duration-300 hover:shadow-xl">
         {/* Logo Header */}
         <div className="bg-primary px-8 py-6 relative overflow-hidden">
-          {/* Shine effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shine"></div>
           
           <div className="flex items-center justify-center gap-3 relative z-10">
@@ -122,11 +120,10 @@ export default function RegisterPage() {
                   ? 'bg-primary text-primary shadow-lg scale-105'
                   : 'bg-component text-main hover:bg-opacity-80 hover:scale-105'
               }`}
-              onClick={() => setRole('student')}
+              onClick={() => handleRoleChange('student')}
+              disabled={currentMutation.isPending || isSubmitting}
             >
-              <span className="relative z-10">
-                Sinh viên
-              </span>
+              <span className="relative z-10">Sinh viên</span>
               {role === 'student' && (
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               )}
@@ -138,11 +135,10 @@ export default function RegisterPage() {
                   ? 'bg-primary text-primary shadow-lg scale-105'
                   : 'bg-component text-main hover:bg-opacity-80 hover:scale-105'
               }`}
-              onClick={() => setRole('lecturer')}
+              onClick={() => handleRoleChange('lecturer')}
+              disabled={currentMutation.isPending || isSubmitting}
             >
-              <span className="relative z-10">
-                Giảng viên
-              </span>
+              <span className="relative z-10">Giảng viên</span>
               {role === 'lecturer' && (
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               )}
@@ -150,162 +146,205 @@ export default function RegisterPage() {
           </div>
 
           {/* Error */}
-          {error && (
+          {currentMutation.isError && (
             <div className="mb-4 p-3 bg-background border-2 border-primary rounded-lg text-main text-sm font-medium">
-              ⚠️ {error}
+              ⚠️ {(currentMutation.error as any)?.response?.data?.message || 'Có lỗi xảy ra!'}
             </div>
           )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Họ và tên"
-            name="fullName"
-            value={formData.fullName}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Số điện thoại"
-            name="phone"
-            type="tel"
-            value={formData.phone}
-            onChange={handleChange}
-          />
-          <Input
-            label="Mật khẩu"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Xác nhận mật khẩu"
-            name="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-          />
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormInput
+              label="Họ và tên"
+              {...register('fullName', {
+                required: 'Họ và tên là bắt buộc'
+              })}
+              error={errors.fullName}
+              disabled={currentMutation.isPending || isSubmitting}
+            />
+            
+            <FormInput
+              label="Email"
+              type="email"
+              {...register('email', {
+                required: 'Email là bắt buộc',
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: 'Email không hợp lệ'
+                }
+              })}
+              error={errors.email}
+              disabled={currentMutation.isPending || isSubmitting}
+            />
+            
+            <FormInput
+              label="Số điện thoại"
+              type="tel"
+              {...register('phone')}
+              error={errors.phone}
+              disabled={currentMutation.isPending || isSubmitting}
+            />
+            
+            <FormInput
+              label="Mật khẩu"
+              type="password"
+              {...register('password', {
+                required: 'Mật khẩu là bắt buộc',
+                minLength: {
+                  value: 8,
+                  message: 'Mật khẩu phải có ít nhất 8 ký tự'
+                }
+              })}
+              error={errors.password}
+              disabled={currentMutation.isPending || isSubmitting}
+            />
+            
+            <FormInput
+              label="Xác nhận mật khẩu"
+              type="password"
+              {...register('confirmPassword', {
+                required: 'Xác nhận mật khẩu là bắt buộc',
+                validate: value => value === password || 'Mật khẩu xác nhận không khớp'
+              })}
+              error={errors.confirmPassword}
+              disabled={currentMutation.isPending || isSubmitting}
+            />
 
-          {/* Conditional Fields */}
-          {role === 'student' && (
-            <>
-              <Input label="Mã sinh viên" name="studentCode" value={formData.studentCode} onChange={handleChange} required />
-              <Input label="Ngành học" name="major" value={formData.major} onChange={handleChange} />
-              <Input label="Năm nhập học" name="enrollmentYear" type="number" value={formData.enrollmentYear} onChange={handleChange} />
-              <Input label="Lớp" name="className" value={formData.className} onChange={handleChange} />
-            </>
-          )}
-
-          {role === 'lecturer' && (
-            <>
-              <Input label="Mã giảng viên" name="lecturerCode" value={formData.lecturerCode} onChange={handleChange} required />
-              <Input label="Khoa / Bộ môn" name="department" value={formData.department} onChange={handleChange} />
-              <div>
-                <label className="block text-sm font-medium text-main mb-2">
-                  Chức danh
-                </label>
-                <select
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main transition-all"
-                >
-                  <option value="TA">Trợ giảng</option>
-                  <option value="LECTURER">Giảng viên</option>
-                  <option value="SENIOR_LECTURER">Giảng viên chính</option>
-                  <option value="ASSOCIATE_PROFESSOR">Phó giáo sư</option>
-                  <option value="PROFESSOR">Giáo sư</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-main mb-2">
-                  Giới thiệu bản thân
-                </label>
-                <textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Chuyên gia về lập trình..."
-                  className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all resize-none"
+            {/* Conditional Fields */}
+            {role === 'student' && (
+              <>
+                <FormInput 
+                  label="Mã sinh viên" 
+                  {...register('studentCode', {
+                    required: 'Mã sinh viên là bắt buộc'
+                  })}
+                  error={errors.studentCode}
+                  disabled={currentMutation.isPending || isSubmitting}
                 />
-              </div>
-            </>
-          )}
+                <FormInput 
+                  label="Ngành học" 
+                  {...register('major')}
+                  error={errors.major}
+                  disabled={currentMutation.isPending || isSubmitting}
+                />
+                <FormInput 
+                  label="Năm nhập học" 
+                  type="number" 
+                  {...register('enrollmentYear')}
+                  error={errors.enrollmentYear}
+                  disabled={currentMutation.isPending || isSubmitting}
+                />
+                <FormInput 
+                  label="Lớp" 
+                  {...register('className')}
+                  error={errors.className}
+                  disabled={currentMutation.isPending || isSubmitting}
+                />
+              </>
+            )}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-primary text-primary font-semibold py-3 px-4 rounded-lg hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-2 relative overflow-hidden group"
-          >
-            <span className="relative z-10">{isLoading ? 'Đang xử lý...' : 'Đăng ký'}</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-          </button>
-        </form>
+            {role === 'lecturer' && (
+              <>
+                <FormInput 
+                  label="Mã giảng viên" 
+                  {...register('lecturerCode', {
+                    required: 'Mã giảng viên là bắt buộc'
+                  })}
+                  error={errors.lecturerCode}
+                  disabled={currentMutation.isPending || isSubmitting}
+                />
+                <FormInput 
+                  label="Khoa / Bộ môn" 
+                  {...register('department')}
+                  error={errors.department}
+                  disabled={currentMutation.isPending || isSubmitting}
+                />
+                <div>
+                  <label className="block text-sm font-medium text-main mb-2">
+                    Chức danh
+                  </label>
+                  <select
+                    {...register('title')}
+                    disabled={currentMutation.isPending || isSubmitting}
+                    className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main transition-all disabled:opacity-50"
+                  >
+                    <option value="TA">Trợ giảng</option>
+                    <option value="LECTURER">Giảng viên</option>
+                    <option value="SENIOR_LECTURER">Giảng viên chính</option>
+                    <option value="ASSOCIATE_PROFESSOR">Phó giáo sư</option>
+                    <option value="PROFESSOR">Giáo sư</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-main mb-2">
+                    Giới thiệu bản thân
+                  </label>
+                  <textarea
+                    {...register('bio')}
+                    disabled={currentMutation.isPending || isSubmitting}
+                    rows={3}
+                    placeholder="Chuyên gia về lập trình..."
+                    className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all resize-none disabled:opacity-50"
+                  />
+                </div>
+              </>
+            )}
 
-        {/* Login link */}
-        <div className="mt-6 text-center pb-2">
-          <p className="text-sm text-secondary">
-            Đã có tài khoản?{' '}
-            <Link
-              to="/login"
-              className="text-main hover:underline font-semibold"
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={currentMutation.isPending || isSubmitting}
+              className="w-full bg-primary text-primary font-semibold py-3 px-4 rounded-lg hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-2 relative overflow-hidden group"
             >
-              Đăng nhập ngay
-            </Link>
-          </p>
-        </div>
+              <span className="relative z-10">
+                {currentMutation.isPending || isSubmitting ? 'Đang xử lý...' : 'Đăng ký'}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+            </button>
+          </form>
+
+          {/* Login link */}
+          <div className="mt-6 text-center pb-2">
+            <p className="text-sm text-secondary">
+              Đã có tài khoản?{' '}
+              <Link
+                to="/login"
+                className="text-main hover:underline font-semibold"
+              >
+                Đăng nhập ngay
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/** Input component */
-function Input({
-  label,
-  name,
-  value,
-  onChange,
-  type = 'text',
-  required = false
-}: {
+/** FormInput component with react-hook-form integration */
+const FormInput = forwardRef<HTMLInputElement, {
   label: string;
-  name: string;
-  value: string;
-  onChange: any;
   type?: string;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={name}
-        className="block text-sm font-medium text-main mb-2"
-      >
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        required={required}
-        className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all"
-      />
-    </div>
-  );
-}
+  error?: FieldError;
+  disabled?: boolean;
+} & React.InputHTMLAttributes<HTMLInputElement>>(
+  ({ label, type = 'text', error, disabled = false, ...props }, ref) => {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-main mb-2">
+          {label} {props.required && <span className="text-red-500">*</span>}
+        </label>
+        <input
+          ref={ref}
+          type={type}
+          disabled={disabled}
+          className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all disabled:opacity-50"
+          {...props}
+        />
+        {error && (
+          <p className="text-red-500 text-xs mt-1">{error.message}</p>
+        )}
+      </div>
+    );
+  }
+);

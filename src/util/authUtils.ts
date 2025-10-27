@@ -12,7 +12,7 @@ export interface User {
     email: string;
     full_name: string;
     avatar: string;
-    role: UserRole; // Đã dùng UserRole type
+    role: UserRole;
     phone?: string;
     createdAt: string;
     updatedAt?: string;
