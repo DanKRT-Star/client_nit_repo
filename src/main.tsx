@@ -1,19 +1,28 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-// import './index.css'
 import { RouterProvider } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import router from './router/index'
-import { AuthProvider } from './context/AuthContext'
+import { useAuthStore } from './stores/authStore'
 
 const queryClient = new QueryClient()
+
+// Component wrapper để gọi checkAuth khi app load
+function AppWrapper() {
+  const checkAuth = useAuthStore(state => state.checkAuth);
+  
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+  
+  return <RouterProvider router={router} />;
+}
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
+      <AppWrapper/>
     </QueryClientProvider>
   </StrictMode>,
 )

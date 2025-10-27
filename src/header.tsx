@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from './context/AuthContext';
+import { useAuthStore } from './stores/authStore';
 import { UserRole } from './context/authUtils';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +10,10 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
-  const { user, logout, isLecturer } = useAuth();
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
+  const isLecturer = user?.role === UserRole.LECTURER;
+
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   
