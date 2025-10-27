@@ -1,33 +1,80 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3002';
-
-// Tạo instance axios với cấu hình mặc định
+const API_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
+if(!API_URL) {
+  throw new Error('Missing VITE_API_BASE_URL. Cấu hình trong .env.[mode]');
+}
+// Tạo axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000,
 });
-export const userApi = {
-  // GET - Lấy danh sách users
-  getAll: () => api.get('/users'),
 
-  // GET - Lấy user theo ID
-  getById: (id: string) => api.get(`/users/${id}`),
+// Interceptor để thêm token vào mọi request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-  // POST - Tạo user mới
-  create: (userData: any) => api.post('/users', userData),
+// Định nghĩa Types cho dữ liệu đăng ký
+export type StudentRegisterData = {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+    studentCode: string;
+    major?: string;
+    enrollmentYear?: number;
+    className?: string;
+}
 
-  // PUT - Cập nhật toàn bộ user
-  update: (id: any, userData: any) => api.put(`/users/${id}`, userData),
+export type LecturerRegisterData = {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+    lecturerCode: string;
+    department?: string;
+    title: 'TA' | 'LECTURER' | 'SENIOR_LECTURER' | 'ASSOCIATE_PROFESSOR' | 'PROFESSOR';
+    bio?: string;
+}
 
-  // PATCH - Cập nhật một phần user
-  patch: (id: any, userData: any) => api.patch(`/users/${id}`, userData),
+// ==== AUTH API ====
+export const authApi = {
 
-  // DELETE - Xóa user
-  delete: (id: any) => api.delete(`/users/${id}`),
+  login: async (email: string, password: string) => {
+    return api.post('/auth/login', { 
+      email, 
+      password 
+    });
+  },
+
+  // Register Student
+  registerStudent: async (data: StudentRegisterData) => {
+    return api.post('/auth/register/student', data);
+  },
+
+  // Register Lecturer
+  registerLecturer: async (data: LecturerRegisterData) => {
+    return api.post('/auth/register/lecturer', data);
+  },
+
+  // Lấy thông tin user hiện tại (sau khi login)
+  getCurrentUser: () => {
+    return api.get('/auth/me');
+  },
+
+  // Kiểm tra email có tồn tại không (nếu API hỗ trợ)
+  checkEmailExists: (email: string) => {
+    // Tùy thuộc vào API của bạn
+    return api.get(`/users?email=${email}`);
+  },
 };
 
 export default api;
-

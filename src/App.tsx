@@ -1,72 +1,74 @@
-import { useEffect } from "react"
-import { Link } from "react-router-dom"
-import Card from "./Card"
-import { userApi } from "./pages/api"
+import './App.css'
+import { Outlet, useLocation } from 'react-router-dom'
+import Header from './header'
+import Sidebar from './sidebar'
+import { useState } from 'react'
+import Footer from './footer'
+import { useAuthStore } from './stores/authStore'
 
-function App() {
-  const names = ["Fast", "Flexible", "Modern"]
-  const fetchUsers = async () => {
-    const response = await userApi.getAll()
-    console.log(response.data)
-  }
-  useEffect(() => {
-    fetchUsers()
-  }, [])
+export default function App() {
+  const user = useAuthStore(state => state.user);
+  const location = useLocation();
+  const isHome = location.pathname === '/student';
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Tailwind CSS Demo
-          </h1>
-          <p className="text-lg text-gray-600">
-            Ví dụ về các component được styling với Tailwind
-          </p>
-        </div>
+    <div className='font-popins flex flex-col h-full max-w-[1500px] mx-auto bg-surface'>
+        
+        <Header 
+          currentPage={location.pathname}
+          onMenuClick={() => setIsSidebarOpen(true)}
+        />
 
-        {/* Card Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          {names.map((name, index) => (
-            <Card key={index} name={name} />
-          ))}
-        </div>
+        <div className='relative flex-1 flex flex-col overflow-auto'>
+          <div className='flex'>
+            <Sidebar 
+              currentPage={location.pathname}
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+            
+            <div className="main flex-1 flex flex-col gap-5 overflow-y-auto">
+                {isHome && (
+                    <>
+                      {/* Welcome Section */}
+                      <section className='flex gap-2.5 rounded-lg'>
+                          <article>
+                            <h1 className="text-3xl font-bold">Welcome back <span className='text-primary'>{user?.full_name}</span></h1>
+                            <p className="text-base">Explore new courses and continue your learning journey!</p>
+                          </article>
+                      </section> 
 
-        {/* Button Group */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Buttons Demo</h2>
-          <div className="flex flex-wrap gap-4">
-            <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
-              Primary
-            </button>
-            <button className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
-              Success
-            </button>
-            <button className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
-              Danger
-            </button>
-            <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-lg transition-colors duration-200">
-              Secondary
-            </button>
-            <button className="border-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200">
-              Outline
-            </button>
+                      <hr  className='border-primary border-2'/>
+
+                      {/* Overview Section */}
+                      <section>
+                          <h2 className='text-2xl font-semibold mb-2.5'>Overview</h2>
+                          <div className='w-full flex items-center justify-between gap-5'>
+                            <div className='flex-1 rounded-md bg-surface shadow-lg py-2 px-4'>
+                              <h3 className='text-xl font-semibold mb-3'>Total course enrolled</h3>
+                              <p>45</p>
+                            </div>
+
+                            <div className='flex-1 rounded-md bg-surface shadow-lg py-2 px-4'>
+                              <h3 className='text-xl font-semibold mb-3'>Completed</h3>
+                              <p>100%</p>
+                            </div>
+
+                            <div className='flex-1 rounded-md bg-surface shadow-lg py-2 px-4'>
+                              <h3 className='text-xl font-semibold mb-3'>Score</h3>
+                              <p>100</p>
+                            </div>
+                          </div>
+                      </section>
+
+                    </>
+                )}
+                <Outlet />
+            </div>
           </div>
+          <Footer/>
         </div>
-
-        {/* Navigation */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Navigation</h2>
-          <Link
-            to="/test"
-            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
-          >
-            Đi đến trang Test →
-          </Link>
-        </div>
-      </div>
     </div>
   )
 }
-
-export default App

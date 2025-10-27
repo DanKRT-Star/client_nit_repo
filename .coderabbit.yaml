@@ -1,0 +1,29 @@
+language: vi
+early_access: false
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - dev
+      - main
+      - master
+  path_filters:
+    - "!**/*.md"
+    - "!**/package-lock.json"
+    - "!**/yarn.lock"
+    - "!**/*.min.js"
+  path_instructions:
+    - path: "**/*.tsx"
+      instructions: "Review React components: Performance (useMemo, useCallback), Accessibility, Props typing, Component structure"
+    - path: "**/*.ts"
+      instructions: "Review TypeScript code: Type safety, Naming conventions, Error handling, Code organization"
+  abort_on_close: true
+chat:
+  auto_reply: true
