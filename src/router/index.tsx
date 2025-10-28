@@ -5,7 +5,7 @@ import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import RoleBasedRoute from '../components/RoleBasedRoute';
-import { UserRole } from '../context/authUtils';
+import { UserRole } from '../util/authUtils';
 import RoleRedirect from '../components/RoleRedirect';
 
 // Import các pages

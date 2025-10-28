@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuthStore } from './stores/authStore';
-import { UserRole } from './context/authUtils';
+import { UserRole } from './util/authUtils';
 import { useNavigate } from 'react-router-dom';
+import { useLogout } from './hooks/useAuthQuery';
 
 interface HeaderProps {
   currentPage: string;
@@ -11,17 +12,23 @@ interface HeaderProps {
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   const user = useAuthStore(state => state.user);
-  const logout = useAuthStore(state => state.logout);
   const isLecturer = user?.role === UserRole.LECTURER;
 
   const navigate = useNavigate();
+  const logoutMutation = useLogout();
   const [showUserMenu, setShowUserMenu] = useState(false);
   
   const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Vẫn navigate về login dù có lỗi
+      navigate('/login');
+    }
   };
 
   const navItems = ['Courses', 'Calendar', 'Assignment', 'Blog'];
@@ -46,6 +53,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
   }
+
 
   return (
     <header className="w-full z-50 flex justify-between items-center shadow-lg px-4 md:px-10 py-3 bg-surface">

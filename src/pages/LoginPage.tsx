@@ -1,46 +1,30 @@
-import { useState, type FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
+import { useLogin } from '../hooks/useAuthQuery';
+
+type LoginFormData = {
+    email: string;
+    password: string;
+};
 
 export default function LoginPage(){
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const login = useAuthStore(state => state.login);
+    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>();
+    
+    const loginMutation = useLogin();
     const navigate = useNavigate();
     const location = useLocation();
 
     // Lấy redirect path từ state (nếu user bị redirect từ protected route)
     const from = (location.state as any)?.from?.pathname || '/';
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
-
-        //Validation
-        if(!email || !password){
-            setError('Vui lòng điền đầy đủ thông tin!');
-            setIsLoading(false);
-            return;
-        }
-
+    const onSubmit = async (data: LoginFormData) => {
         try {
-            const result = await login(email, password);
-
-            if(result.success){
-                // Redirect về trang trước đó hoặc trang chủ
-                navigate(from, {replace: true});
-            } else {
-                setError(result.message);
-            }
+            await loginMutation.mutateAsync(data);
+            
+            // Redirect về trang trước đó hoặc trang chủ
+            navigate(from, {replace: true});
         } catch(err) {
             console.log('Login error:', err);
-            setError('Có lỗi xảy ra. Vui lòng thử lại!');
-        } finally {
-            setIsLoading(false);
         }
     }
     
@@ -78,14 +62,14 @@ export default function LoginPage(){
                     </div>
 
                     {/* Error Message */}
-                    {error && (
+                    {loginMutation.isError && (
                         <div className='mb-4 p-3 bg-background border-2 border-primary rounded-lg text-main text-sm font-medium'>
-                            ⚠️ {error}
+                            ⚠️ {(loginMutation.error as any)?.response?.data?.message || 'Có lỗi xảy ra!'}
                         </div>
                     )}
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className='space-y-5'>
+                    <form onSubmit={handleSubmit(onSubmit)} className='space-y-5'>
                         {/* Email */}
                         <div>
                             <label htmlFor="email" className='block text-sm font-medium text-main mb-2'>
@@ -94,12 +78,20 @@ export default function LoginPage(){
                             <input 
                                 type="email"
                                 id='email'
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                {...register('email', {
+                                    required: 'Email là bắt buộc',
+                                    pattern: {
+                                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                        message: 'Email không hợp lệ'
+                                    }
+                                })}
                                 className='w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all'
                                 placeholder='example@gmail.com'
-                                disabled={isLoading}
+                                disabled={loginMutation.isPending || isSubmitting}
                             />
+                            {errors.email && (
+                                <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+                            )}
                         </div>
 
                         {/* Password */}
@@ -110,21 +102,31 @@ export default function LoginPage(){
                             <input
                                 id='password' 
                                 type="password"
-                                value={password}
-                                onChange = {(e) => setPassword(e.target.value)}
+                                {...register('password', {
+                                    required: 'Mật khẩu là bắt buộc',
+                                    minLength: {
+                                        value: 6,
+                                        message: 'Mật khẩu phải có ít nhất 6 ký tự'
+                                    }
+                                })}
                                 className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all"
                                 placeholder='••••••••'
-                                disabled={isLoading}
+                                disabled={loginMutation.isPending || isSubmitting}
                             />
+                            {errors.password && (
+                                <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+                            )}
                         </div>
 
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={loginMutation.isPending || isSubmitting}
                             className="w-full bg-primary text-primary font-semibold py-3 px-4 rounded-lg hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-6 relative overflow-hidden group"
                         >
-                            <span className="relative z-10">{isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
+                            <span className="relative z-10">
+                                {loginMutation.isPending || isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                            </span>
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                         </button>
                     </form>
