@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 import { queryKeys } from '../config/queryClient';
 import { type User, normalizeRole } from '../util/authUtils';
 
-// Hook để lấy thông tin user hiện tại
+// Hook get current user
 export const useCurrentUser = () => {
   const setUser = useAuthStore(state => state.setUser);
   
@@ -33,7 +33,7 @@ export const useCurrentUser = () => {
   });
 };
 
-// Hook login với React Query
+// Hook login
 export const useLogin = () => {
   const setUser = useAuthStore(state => state.setUser);
   const queryClient = useQueryClient();
