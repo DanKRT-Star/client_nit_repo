@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuthStore } from './stores/authStore';
-import { UserRole } from './util/authUtils';
 import { useNavigate } from 'react-router-dom';
-import { useLogout } from './hooks/useAuthQuery';
 
 interface HeaderProps {
   currentPage: string;
@@ -12,29 +10,27 @@ interface HeaderProps {
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
   const user = useAuthStore(state => state.user);
-  const isLecturer = user?.role === UserRole.LECTURER;
+  const logout = useAuthStore(state => state.logout);
 
   const navigate = useNavigate();
-  const logoutMutation = useLogout();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
-  const baseUrl = user?.role === UserRole.LECTURER ? '/lecturer' : '/student';
+  const [isDark, setIsDark] = useState(false);
+
+  const isLecturer = user?.role === 'lecturer';
+  const baseUrl = isLecturer ? '/lecturer' : '/student';
 
   const handleLogout = async () => {
     try {
-      await logoutMutation.mutateAsync();
+      logout(); // 👈 gọi logout từ store
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      // Vẫn navigate về login dù có lỗi
       navigate('/login');
     }
   };
 
   const navItems = ['Courses', 'Calendar', 'Assignment', 'Blog'];
-  const [isDark, setIsDark] = useState(false);
 
-  // Load theme từ localStorage khi component mount
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === 'dark') {
@@ -43,17 +39,14 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
     }
   }, []);
 
-  // Lưu theme vào localStorage khi thay đổi
   useEffect(() => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  // Toggle dark mode
   const toggleDarkMode = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
   }
-
 
   return (
     <header className="w-full z-50 flex justify-between items-center shadow-lg px-4 md:px-10 py-3 bg-surface">

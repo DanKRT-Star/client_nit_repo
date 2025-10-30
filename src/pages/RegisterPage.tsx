@@ -1,8 +1,8 @@
-import { useState, forwardRef } from 'react';
+import { useState, forwardRef} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm, type FieldError } from 'react-hook-form';
-import { useRegisterStudent, useRegisterLecturer } from '../hooks/useAuthQuery';
-import type { StudentRegisterData, LecturerRegisterData } from '../pages/api';
+import { useRegister } from '../hooks/useAuthQuery';
+
 
 type RegisterFormData = {
   fullName: string;
@@ -25,16 +25,12 @@ type RegisterFormData = {
 export default function RegisterPage() {
   const [role, setRole] = useState<'student' | 'lecturer'>('student');
   const { register, handleSubmit, watch, formState: { errors, isSubmitting }, reset } = useForm<RegisterFormData>({
-    defaultValues: {
-      title: 'LECTURER'
-    }
+    defaultValues: { title: 'LECTURER' },
   });
 
-  const registerStudentMutation = useRegisterStudent();
-  const registerLecturerMutation = useRegisterLecturer();
+  const { mutateAsync: registerAccount, isLoading, error } = useRegister();
   const navigate = useNavigate();
 
-  const currentMutation = role === 'student' ? registerStudentMutation : registerLecturerMutation;
   const password = watch('password');
 
   // Reset form khi đổi role
@@ -44,41 +40,21 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (data: RegisterFormData) => {
-    const { confirmPassword, enrollmentYear, ...restData } = data;
-    
-    try {
-      if (role === 'student') {
-        const studentData: StudentRegisterData = {
-          fullName: restData.fullName,
-          email: restData.email,
-          password: restData.password,
-          phone: restData.phone,
-          studentCode: restData.studentCode!,
-          major: restData.major,
-          className: restData.className,
-          enrollmentYear: enrollmentYear ? Number(enrollmentYear) : undefined
-        };
-        await registerStudentMutation.mutateAsync(studentData);
-      } else {
-        const lecturerData: LecturerRegisterData = {
-          fullName: restData.fullName,
-          email: restData.email,
-          password: restData.password,
-          phone: restData.phone,
-          lecturerCode: restData.lecturerCode!,
-          department: restData.department,
-          title: restData.title!,
-          bio: restData.bio,
-        };
-        await registerLecturerMutation.mutateAsync(lecturerData);
-      }
+    if (data.password !== data.confirmPassword) {
+      alert('Mật khẩu xác nhận không khớp!');
+      return;
+    }
 
+    try {
+      await registerAccount({ role, data });
       alert('Đăng ký thành công!');
       navigate('/');
     } catch (err: any) {
       console.error('Register error:', err);
+      alert(err?.response?.data?.message || 'Đăng ký thất bại!');
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 py-8 relative overflow-hidden">
@@ -121,7 +97,7 @@ export default function RegisterPage() {
                   : 'bg-component text-main hover:bg-opacity-80 hover:scale-105'
               }`}
               onClick={() => handleRoleChange('student')}
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading || isSubmitting}
             >
               <span className="relative z-10">Sinh viên</span>
               {role === 'student' && (
@@ -136,7 +112,7 @@ export default function RegisterPage() {
                   : 'bg-component text-main hover:bg-opacity-80 hover:scale-105'
               }`}
               onClick={() => handleRoleChange('lecturer')}
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading || isSubmitting}
             >
               <span className="relative z-10">Giảng viên</span>
               {role === 'lecturer' && (
@@ -146,9 +122,9 @@ export default function RegisterPage() {
           </div>
 
           {/* Error */}
-          {currentMutation.isError && (
+          {error && (
             <div className="mb-4 p-3 bg-background border-2 border-primary rounded-lg text-main text-sm font-medium">
-              ⚠️ {(currentMutation.error as any)?.response?.data?.message || 'Có lỗi xảy ra!'}
+              ⚠️ {(error as any)?.response?.data?.message || 'Có lỗi xảy ra!'}
             </div>
           )}
 
@@ -160,7 +136,7 @@ export default function RegisterPage() {
                 required: 'Họ và tên là bắt buộc'
               })}
               error={errors.fullName}
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading || isSubmitting}
             />
             
             <FormInput
@@ -174,7 +150,7 @@ export default function RegisterPage() {
                 }
               })}
               error={errors.email}
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading || isSubmitting}
             />
             
             <FormInput
@@ -182,7 +158,7 @@ export default function RegisterPage() {
               type="tel"
               {...register('phone')}
               error={errors.phone}
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading || isSubmitting}
             />
             
             <FormInput
@@ -196,7 +172,7 @@ export default function RegisterPage() {
                 }
               })}
               error={errors.password}
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading || isSubmitting}
             />
             
             <FormInput
@@ -207,7 +183,7 @@ export default function RegisterPage() {
                 validate: value => value === password || 'Mật khẩu xác nhận không khớp'
               })}
               error={errors.confirmPassword}
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading|| isSubmitting}
             />
 
             {/* Conditional Fields */}
@@ -219,26 +195,26 @@ export default function RegisterPage() {
                     required: 'Mã sinh viên là bắt buộc'
                   })}
                   error={errors.studentCode}
-                  disabled={currentMutation.isPending || isSubmitting}
+                  disabled={isLoading || isSubmitting}
                 />
                 <FormInput 
                   label="Ngành học" 
                   {...register('major')}
                   error={errors.major}
-                  disabled={currentMutation.isPending || isSubmitting}
+                  disabled={isLoading || isSubmitting}
                 />
                 <FormInput 
                   label="Năm nhập học" 
                   type="number" 
                   {...register('enrollmentYear')}
                   error={errors.enrollmentYear}
-                  disabled={currentMutation.isPending || isSubmitting}
+                  disabled={isLoading || isSubmitting}
                 />
                 <FormInput 
                   label="Lớp" 
                   {...register('className')}
                   error={errors.className}
-                  disabled={currentMutation.isPending || isSubmitting}
+                  disabled={isLoading || isSubmitting}
                 />
               </>
             )}
@@ -251,13 +227,13 @@ export default function RegisterPage() {
                     required: 'Mã giảng viên là bắt buộc'
                   })}
                   error={errors.lecturerCode}
-                  disabled={currentMutation.isPending || isSubmitting}
+                  disabled={isLoading || isSubmitting}
                 />
                 <FormInput 
                   label="Khoa / Bộ môn" 
                   {...register('department')}
                   error={errors.department}
-                  disabled={currentMutation.isPending || isSubmitting}
+                  disabled={isLoading || isSubmitting}
                 />
                 <div>
                   <label className="block text-sm font-medium text-main mb-2">
@@ -265,7 +241,7 @@ export default function RegisterPage() {
                   </label>
                   <select
                     {...register('title')}
-                    disabled={currentMutation.isPending || isSubmitting}
+                    disabled={isLoading || isSubmitting}
                     className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main transition-all disabled:opacity-50"
                   >
                     <option value="TA">Trợ giảng</option>
@@ -281,7 +257,7 @@ export default function RegisterPage() {
                   </label>
                   <textarea
                     {...register('bio')}
-                    disabled={currentMutation.isPending || isSubmitting}
+                    disabled={isLoading || isSubmitting}
                     rows={3}
                     placeholder="Chuyên gia về lập trình..."
                     className="w-full px-4 py-2.5 bg-background border border-color rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-main placeholder:text-secondary transition-all resize-none disabled:opacity-50"
@@ -293,11 +269,11 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={currentMutation.isPending || isSubmitting}
+              disabled={isLoading || isSubmitting}
               className="w-full bg-primary text-primary font-semibold py-3 px-4 rounded-lg hover:shadow-2xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-2 relative overflow-hidden group"
             >
               <span className="relative z-10">
-                {currentMutation.isPending || isSubmitting ? 'Đang xử lý...' : 'Đăng ký'}
+                {isLoading || isSubmitting ? 'Đang xử lý...' : 'Đăng ký'}
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
             </button>

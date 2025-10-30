@@ -77,4 +77,27 @@ export const authApi = {
   },
 };
 
+// ==== COURSE API ====
+export const courseApi = {
+  // Lấy danh sách tất cả khóa học
+  getCourses: async () => {
+    return api.get('/courses');
+  },
+
+  // Lấy chi tiết 1 khóa học theo id
+  getCourseById: async (courseId: string) => {
+    return api.get(`/courses/${courseId}`);
+  },
+
+  // (Tuỳ chọn) Lấy danh sách khóa học của giảng viên hiện tại
+  getLecturerCourses: async () => {
+    return api.get('/lecturer/courses');
+  },
+
+  // (Tuỳ chọn) Thêm khóa học mới
+  createCourse: async (data: { title: string; description?: string }) => {
+    return api.post('/courses', data);
+  },
+};
+
 export default api;
