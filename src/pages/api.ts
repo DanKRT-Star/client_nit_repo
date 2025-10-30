@@ -22,6 +22,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor để bắt lỗi 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('401 Unauthorized - Token có thể đã hết hạn');
+      // Có thể redirect về trang login
+      // window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Định nghĩa Types cho dữ liệu đăng ký
 export type StudentRegisterData = {
     email: string;
@@ -43,6 +56,58 @@ export type LecturerRegisterData = {
     department?: string;
     title: 'TA' | 'LECTURER' | 'SENIOR_LECTURER' | 'ASSOCIATE_PROFESSOR' | 'PROFESSOR';
     bio?: string;
+}
+
+// Định nghĩa Types cho Course (theo API backend)
+export type CreateCourseData = {
+    courseCode: string;
+    courseName: string;
+    description: string;
+    credits: number;
+    maxStudents: number;
+    lecturerId: string; // Backend yêu cầu UUID
+}
+
+export type CourseSchedule = {
+    id: string;
+    courseId: string;
+    semester: string;
+    academicYear: string;
+    dayOfWeek: string;
+    startTime: string;
+    endTime: string;
+    room: string;
+    startDate: string;
+    endDate: string;
+    totalWeeks: number;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type CreateScheduleData = {
+    courseId: string;
+    semester: string;
+    academicYear: string;
+    dayOfWeek: string;
+    startTime: string;
+    endTime: string;
+    room: string;
+    startDate: string;
+    endDate: string;
+    totalWeeks: number;
+};
+
+export type Course = {
+    id: string;
+    courseCode: string;
+    courseName: string;
+    description: string;
+    credits: number;
+    maxStudents: number;
+    lecturerId: string;
+    createdAt: string;
+    updatedAt: string;
+    schedules?: CourseSchedule[];
 }
 
 // ==== AUTH API ====
@@ -74,6 +139,54 @@ export const authApi = {
   checkEmailExists: (email: string) => {
     // Tùy thuộc vào API của bạn
     return api.get(`/users?email=${email}`);
+  },
+};
+
+// ==== COURSE API ====
+export const courseApi = {
+  // Tạo course mới
+  createCourse: async (data: CreateCourseData) => {
+    return api.post('/courses', data);
+  },
+
+  // Lấy danh sách courses của lecturer
+  getLecturerCourses: async () => {
+    return api.get('/courses/my-courses');
+  },
+
+  // Thêm lịch học cho course
+  createSchedule: async (data: CreateScheduleData) => {
+    return api.post('/schedules', data);
+  },
+
+  // Lấy lịch học theo course
+  getCourseSchedules: async (courseId: string) => {
+    return api.get('/schedules', {
+      params: {
+        courseId,
+        limit: 1000,
+      },
+    });
+  },
+
+  // Lấy chi tiết course
+  getCourseById: async (courseId: string) => {
+    return api.get(`/courses/${courseId}`);
+  },
+
+  // Cập nhật course
+  updateCourse: async (courseId: string, data: Partial<CreateCourseData>) => {
+    return api.put(`/courses/${courseId}`, data);
+  },
+
+  // Xóa course
+  deleteCourse: async (courseId: string) => {
+    return api.delete(`/courses/${courseId}`);
+  },
+
+  // Lấy tất cả courses (public)
+  getAllCourses: async () => {
+    return api.get('/courses');
   },
 };
 
