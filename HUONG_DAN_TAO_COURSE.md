@@ -1,1059 +1,225 @@
-# Hướng Dẫn Chi Tiết - Chức Năng Tạo Course (Lecturer)
+# Hướng Dẫn Tạo Course Cho Lecturer
 
-## 📌 Tổng quan
-
-Chức năng tạo và quản lý khóa học dành cho Lecturer đã được hoàn thiện và **tích hợp đầy đủ với API backend**. Tài liệu này mô tả toàn bộ luồng tạo Course từ lúc lecturer submit form, tạo lịch học (schedule) cho từng buổi, cho đến khi dữ liệu được hiển thị lại trong trang danh sách. Đồng thời, tài liệu cũng giải thích rõ cách chúng ta sử dụng các hooks như `useForm`, `useFieldArray`, `useMutation`, `useQuery` để điều phối luồng dữ liệu.
+Tài liệu này cô đọng lại toàn bộ kiến thức cần thiết để giảng viên tạo khóa học (Course) trên hệ thống: từ nền tảng dữ liệu, cách giao tiếp với API, tới cách các hooks React/React Query phối hợp vận hành – đặc biệt là `useMemo` và `useDebounce`. Mục tiêu là giúp bạn vừa hiểu lý thuyết, vừa nắm quy trình chi tiết để có thể debug và mở rộng dễ dàng.
 
 ---
 
-## 🏗️ Kiến Trúc Hệ Thống
+## 1. Mục Tiêu
 
-### 1. **Database Schema (EERD)**
+- Hiểu sự khác biệt giữa `userId` (tài khoản) và `lecturerId` (thực thể giảng viên).
+- Nắm rõ các endpoint và payload liên quan tới việc tạo course.
+- Theo dõi toàn bộ luồng hoạt động: đăng nhập → điền form → gọi API → đồng bộ danh sách.
+- Hiểu vai trò của từng hook chính (`useForm`, `useFieldArray`, `useMutation`, `useQuery`, `useEffect`, `useMemo`, `useDebounce`).
+- Có checklist thao tác và gợi ý debug khi gặp sự cố.
 
-Hệ thống sử dụng 3 bảng chính cho authentication:
+---
+
+## 2. Kiến Thức Nền Tảng
+
+### 2.1 Mô Hình Dữ Liệu
 
 ```
 ┌─────────────┐       ┌──────────────┐       ┌─────────────┐
 │    USER     │       │   LECTURER   │       │   COURSE    │
 ├─────────────┤       ├──────────────┤       ├─────────────┤
-│ userId (PK) │──┐    │ lecturerId   │──┐    │ courseId    │
-│ email       │  │    │ (PK)         │  │    │ (PK)        │
-│ fullName    │  └───>│ userId (FK)  │  │    │             │
-│ role        │       │ lecturerCode │  └───>│ lecturerId  │
-│ ...         │       │ department   │       │ (FK)        │
-└─────────────┘       │ title        │       │ courseCode  │
-                      │ bio          │       │ courseName  │
-                      └──────────────┘       │ ...         │
-                                             └─────────────┘
+│ id (PK)     │──┐    │ id (PK)      │──┐    │ id (PK)     │
+│ email       │  │    │ userId (FK)  │  │    │ lecturerId  │──┐
+│ fullName    │  └───>│ lecturerCode │  │    │ courseCode  │  │
+│ role        │       │ department   │  │    │ courseName  │  │
+│ ...         │       │ title        │  │    │ ...         │  │
+└─────────────┘       │ bio          │  │    └─────────────┘  │
+                      └──────────────┘  │                      │
+                                         └──────────────────────┘
 ```
 
-### 2. **⚠️ Vấn Đề Quan Trọng: User ID vs Lecturer ID**
+- `USER.id` là ID của tài khoản đăng nhập.
+- `LECTURER.id` là ID nghiệp vụ của giảng viên, liên kết với `USER` qua `userId`.
+- `COURSE.lecturerId` luôn trỏ tới `LECTURER.id`. Đây là giá trị backend yêu cầu khi tạo course.
 
-Đây là vấn đề **quan trọng nhất** trong việc tích hợp API:
+### 2.2 Khái Niệm Cần Nắm
 
-#### **Tại sao có 2 ID khác nhau?**
+- **userId ≠ lecturerId**: dù cùng một con người, backend tách hai bảng để dễ mở rộng đa vai trò. Tạo course phải dùng `lecturerId`.
+- **JWT Access Token**: mọi request cần gửi token; axios interceptor đã tự thêm.
+- **Schedule**: backend có thể trả lịch học trong payload course hoặc cần gọi thêm `/schedules?courseId=...`. Frontend đã chuẩn bị cả hai trường hợp.
 
-- **`userId`**: ID trong bảng `USER` - đại diện cho tài khoản đăng nhập
-- **`lecturerId`**: ID trong bảng `LECTURER` - đại diện cho thông tin giảng viên cụ thể
+### 2.3 Endpoint Chính
 
-**Lý do thiết kế:**
-- 1 user có thể có nhiều vai trò (student/lecturer)
-- Tách biệt authentication (USER) và business logic (LECTURER/STUDENT)
-- Dễ mở rộng khi thêm vai trò mới (admin, staff, etc.)
+| Endpoint | Method | Chức năng |
+|----------|--------|-----------|
+| `/api/v1/auth/login` | POST | Đăng nhập, trả về user + lecturer/student + token |
+| `/api/v1/courses` | POST | Tạo course (bắt buộc `lecturerId`) |
+| `/api/v1/courses/my-courses` | GET | Lấy danh sách course của lecturer hiện tại |
+| `/api/v1/schedules` | POST/PATCH/DELETE | Quản lý lịch học |
+| `/api/v1/schedules?courseId=` | GET | Lấy lịch học của một course cụ thể |
 
-#### **Vấn đề gặp phải:**
+---
 
-Ban đầu, khi tạo course, frontend gửi `user.id` (userId) làm `lecturerId`:
+## 3. Thành Phần Frontend Liên Quan
 
-```json
-// ❌ SAI - Gửi userId
-{
-  "courseCode": "CS101",
-  "courseName": "Web Programming",
-  "lecturerId": "4a7a2a1e-732d-4108-a868-eee9e265d8d0"  // <- Đây là userId
-}
-```
+- `src/hooks/useAuthQuery.ts`: đăng nhập, chuẩn hóa user, lưu `lecturerId` vào Zustand.
+- `src/stores/authStore.ts`: lưu user hiện tại và thông tin quyền hạn.
+- `src/pages/api.ts`: axios instance + `courseApi` (create course, fetch courses, fetch schedules...).
+- `src/pages/CreateCoursePage.tsx`: form tạo course, quản lý schedules, gọi mutation.
+- `src/pages/LecturerCoursesPage.tsx`: danh sách khóa học, tìm kiếm, lọc, sort, đồng bộ lịch học.
+- `src/hooks/useDebounce.ts`: hook debounce dùng cho ô tìm kiếm.
 
-Backend trả về lỗi:
-```
-"Lecturer not found"
-```
+---
 
-**Nguyên nhân:**
-- Backend tìm trong bảng `LECTURER` với `lecturerId = userId`
-- Không tìm thấy vì `userId ≠ lecturerId`
+## 4. Luồng Hoạt Động Chi Tiết
 
-#### **Giải pháp:**
+### Bước 1 – Đăng Nhập & Lấy `lecturerId`
 
-Backend khi login trả về **nested object** với đầy đủ thông tin:
+1. Người dùng submit form đăng nhập → `useLogin` (React Query `useMutation`).
+2. Backend trả về user + nested lecturer + token.
+3. `useLogin` chuẩn hóa dữ liệu, trích `user.lecturer?.id` và lưu vào Zustand store (`user.lecturerId`).
+4. Lưu `accessToken`, `refreshToken` vào localStorage để interceptor sử dụng.
 
-```json
-{
-  "user": {
-    "id": "4a7a2a1e-732d-4108-a868-eee9e265d8d0",  // userId
-    "email": "lecturer@elearning.com",
-    "role": "LECTURER",
-    "student": null,  // null vì user này không phải student
-    "lecturer": {
-      "id": "c672474c-572a-43a0-99f0-f4cb189ebb6c",  // <- lecturerId thực sự
-      "userId": "4a7a2a1e-732d-4108-a868-eee9e265d8d0",
-      "lecturerCode": "GV001",
-      "department": "Khoa Công Nghệ Thông Tin",
-      "title": "LECTURER",
-      "bio": "Chuyên gia về lập trình"
-    }
-  },
-  "accessToken": "...",
-  "refreshToken": "..."
-}
-```
+### Bước 2 – Mở Form Tạo Course
 
-**Frontend phải extract và lưu đúng ID:**
+1. `CreateCoursePage` gọi `useAuthStore` để lấy `user` hiện tại.
+2. `useForm` khởi tạo state form; `useFieldArray` quản lý danh sách lịch học động.
+3. Nếu ở chế độ chỉnh sửa, `useEffect` sẽ prefill dữ liệu từ API (logic đã chuẩn bị sẵn).
 
+### Bước 3 – Submit Form
+
+1. Người dùng điền form và nhấn submit.
+2. `onSubmit` kiểm tra `user?.lecturerId`. Nếu thiếu → cảnh báo đăng nhập lại.
+3. Chuẩn hóa payload `CreateCourseData`: ép kiểu số (`credits`, `maxStudents`), gán `lecturerId`.
+4. Gọi `createCourseMutation.mutateAsync(payload)` (POST `/courses`).
+5. Thành công → hiện thông báo → `invalidateQueries({ queryKey: ['lecturer-courses'] })` → điều hướng `/lecturer/courses`.
+6. Thất bại → hiển thị thông báo lỗi dựa trên `error.response?.data?.message`.
+
+### Bước 4 – Tạo/Cập Nhật Lịch Học (Tuỳ Chọn)
+
+1. Khi đã có `courseId`, component có thể gọi các mutation schedule (`POST/PATCH/DELETE /schedules`).
+2. Payload cần chuẩn hóa ngày (`ISO`), giờ bắt đầu/kết thúc, `totalWeeks`.
+3. Nếu một lịch lỗi, khóa học vẫn giữ nguyên nhưng phải cảnh báo người dùng.
+
+### Bước 5 – Đồng Bộ Danh Sách Courses
+
+1. `LecturerCoursesPage` dùng `useInfiniteQuery` (queryKey gồm `lecturerId`, `debouncedSearchTerm`) để gọi `/courses` với tham số `page`, `limit` (mặc định 9 mục/trang).
+2. Mỗi lần fetch trả về `{ items, meta }`; `useMemo` gộp `data.pages.flatMap` thành một mảng `courses` thống nhất.
+3. `IntersectionObserver` quan sát sentinel cuối danh sách, khi người dùng cuộn chạm đáy và `hasNextPage` → tự động `fetchNextPage()` để tải trang tiếp theo.
+4. Song song, `useEffect` tiếp tục bổ sung lịch học qua `courseApi.getCourseSchedules`, còn `useMemo` sinh `filteredCourses` dựa trên bộ lọc giao diện.
+
+---
+
+## 5. Hooks Chính & Cách Hoạt Động
+
+### 5.1 `useDebounce`
+
+- **Vị trí**: `LecturerCoursesPage`.
+- **Vai trò**: Chờ người dùng ngừng nhập 500ms rồi mới kích hoạt refetch, tránh spam API.
+- **Mẫu sử dụng**:
 ```typescript
-// ✅ ĐÚNG - Extract lecturerId từ nested object
-const lecturerId = user.lecturer?.id;  // "c672474c-572a-43a0-99f0-f4cb189ebb6c"
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-// Gửi lecturerId đúng lên backend
-{
-  "courseCode": "CS101",
-  "lecturerId": "c672474c-572a-43a0-99f0-f4cb189ebb6c"  // <- Đúng!
-}
-```
-
----
-
-## 🔄 Flow Dữ Liệu Chi Tiết
-
-### **1. Authentication Flow**
-
-```
-┌─────────────┐
-│   Login     │
-│   Request   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────────────────────────────────┐
-│  Backend API: /api/v1/auth/login        │
-│  - Kiểm tra email/password              │
-│  - Tạo accessToken & refreshToken       │
-│  - Query USER + JOIN LECTURER/STUDENT   │
-└──────┬──────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────┐
-│  Response: {                            │
-│    user: {                              │
-│      id: "userId",                      │
-│      lecturer: { id: "lecturerId" }     │
-│    },                                   │
-│    accessToken: "...",                  │
-│    refreshToken: "..."                  │
-│  }                                      │
-└──────┬──────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────┐
-│  Frontend: useLogin hook                │
-│  - Extract lecturerId = user.lecturer.id│
-│  - Normalize user data                  │
-│  - Save to Zustand store:               │
-│    {                                    │
-│      id: userId,                        │
-│      lecturerId: lecturerId,            │
-│      role: LECTURER,                    │
-│      ...                                │
-│    }                                    │
-│  - Save to localStorage:                │
-│    - token = accessToken                │
-│    - refreshToken                       │
-└──────┬──────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────┐
-│  User authenticated & ready             │
-└─────────────────────────────────────────┘
-```
-
-### **2. Create Course Flow**
-
-```
-┌─────────────────┐
-│ User clicks     │
-│ "Tạo khóa học"  │
-└────────┬────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│ CreateCoursePage.tsx                     │
-│ - Check if user.lecturerId exists        │
-│ - Validate form with react-hook-form     │
-└────────┬─────────────────────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│ Build request payload:                   │
-│ {                                        │
-│   courseCode: "CS101",                   │
-│   courseName: "Web Programming",         │
-│   description: "...",                    │
-│   credits: 3,                            │
-│   maxStudents: 50,                       │
-│   lecturerId: user.lecturerId  // ✅     │
-│ }                                        │
-└────────┬─────────────────────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│ React Query: useMutation                 │
-│ - mutationFn: courseApi.createCourse()   │
-│ - Axios POST to /api/v1/courses          │
-│ - Auto add Authorization header          │
-└────────┬─────────────────────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│ Backend API: /api/v1/courses             │
-│ - Verify JWT token                       │
-│ - Validate request body                  │
-│ - Check if lecturerId exists in DB       │
-│ - Create course record                   │
-│ - Return course data                     │
-└────────┬─────────────────────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│ Frontend: onSuccess callback             │
-│ - Show success message                   │
-│ - Invalidate "lecturerCourses" query     │
-└──────────────────────────────────────────┘
-```
-
----
-
-### **3. Create / Update Schedule Flow**
-
-```
-┌─────────────────────────┐
-│ React Hook Form submit │
-│ (kèm danh sách lịch)   │
-└─────────────┬──────────┘
-              │
-              ▼
-┌──────────────────────────────────────────┐
-│ CreateCoursePage.tsx                     │
-│ - useFieldArray lưu danh sách schedules  │
-│ - Nếu tạo mới: đợi mutate course xong    │
-│   để lấy courseId                        │
-│ - Nếu chỉnh sửa: dùng courseId từ params │
-└─────────────┬────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────┐
-│ Chuẩn hóa schedule payload               │
-│ - Ép totalWeeks về number                │
-│ - Auto tính totalWeeks khi đổi ngày      │
-│ - Chuyển start/endDate sang ISO          │
-│ - Chia 3 nhóm: mới / cập nhật / xoá      │
-└─────────────┬────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────┐
-│ Gửi API song song                        │
-│ - POST /api/v1/schedules (lịch mới)      │
-│ - PATCH /api/v1/schedules/{id} (lịch sửa)│
-│ - DELETE /api/v1/schedules/{id} (lịch xoá)│
-│ - Each promise riêng, alert nếu lỗi      │
-└─────────────┬────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────┐
-│ invalidate ['lecturer-courses'] + điều   │
-│ hướng về /lecturer/courses               │
-└──────────────────────────────────────────┘
-```
-
-**Lưu ý quan trọng:**
-- Nếu backend trả về courseId bên trong `data`, `course`, hoặc `data.course.id`, component đã handle đủ mọi trường hợp.
-- Nếu tất cả schedules tạo thành công → hiển thị alert "Tạo khóa học và lịch học thành công".
-- Nếu một schedule thất bại → alert cảnh báo nhưng vẫn giữ khóa học.
-
----
-
-### **4. Đồng bộ lịch trong LecturerCoursesPage**
-
-```
-┌────────────────────────────────────────────┐
-│ useQuery(['lecturer-courses'])             │
-│ - GET /api/v1/courses/my-courses           │
-│ - Trả về danh sách course (có thể thiếu    │
-│   field schedules)                         │
-└───────────────┬────────────────────────────┘
-                │
-                ▼
-┌────────────────────────────────────────────┐
-│ useEffect                                   │
-│ - Lọc course chưa có schedules              │
-│ - Gọi courseApi.getCourseSchedules(courseId)│
-│   → thực chất là GET /api/v1/schedules?courseId│
-│ - Lưu kết quả vào state scheduleMap         │
-└───────────────┬────────────────────────────┘
-                │
-                ▼
-┌────────────────────────────────────────────┐
-│ Render card                                │
-│ - Ưu tiên lấy scheduleMap[courseId]        │
-│ - Nếu đang fetch: hiện loading text        │
-│ - Nếu không có lịch: hiện “Chưa thiết lập” │
-└────────────────────────────────────────────┘
-```
-
-- React Query đảm bảo khi tạo khóa học xong và invalidates query, trang list sẽ tự fetch lại.
-- `useEffect` chỉ gọi API lịch cho những course chưa có dữ liệu đáp ứng, tránh call dư thừa nhờ `fetchedScheduleIds`.
-
----
-
-## 💻 Code Walkthrough
-
-### **1. User Interface - Extended với `lecturerId`**
-
-**File:** `src/util/authUtils.ts`
-
-```typescript
-export interface User {
-    id: string;           // userId từ bảng USER
-    email: string;
-    full_name: string;
-    avatar: string;
-    role: UserRole;
-    phone?: string;
-    createdAt: string;
-    updatedAt?: string;
-    
-    // ⭐ Thêm 2 fields quan trọng
-    lecturerId?: string;  // ID từ bảng LECTURER (khác với userId)
-    studentId?: string;   // ID từ bảng STUDENT (khác với userId)
-}
-```
-
-**Giải thích:**
-- `id`: Luôn là `userId` - dùng cho authentication
-- `lecturerId`: Chỉ có khi `role = LECTURER` - dùng cho business logic
-- `studentId`: Chỉ có khi `role = STUDENT` - dùng cho business logic
-
----
-
-### **Hook & Library sử dụng**
-
-| Hook / Library | Nơi sử dụng | Mục đích chính |
-|----------------|-------------|----------------|
-| `useForm` (react-hook-form) | `CreateCoursePage.tsx` | Khởi tạo state form, handle submit, validate input đồng thời đảm bảo type-safe. |
-| `useFieldArray` (react-hook-form) | `CreateCoursePage.tsx` | Quản lý danh sách lịch học động (thêm/xóa nhiều schedule cùng lúc) với metadata và lỗi riêng cho từng phần tử. |
-| `useMutation` (React Query) | `CreateCoursePage.tsx` | Gửi `POST /courses` (tạo mới) hoặc `PATCH /courses/{id}` (chỉnh sửa) rồi `POST/PATCH/DELETE /schedules`, quản lý loading và lỗi. |
-| `useQuery` (React Query) | `LecturerCoursesPage.tsx` | Fetch danh sách khóa học qua `GET /courses/my-courses`, tự động refetch sau invalidate. |
-| `useEffect` (React) | `CreateCoursePage.tsx`, `LecturerCoursesPage.tsx` | Prefill dữ liệu khi chỉnh sửa, tính lại totalWeeks, fetch thêm lịch học bằng `GET /schedules?courseId=...` và ghép vào state cục bộ. |
-| `useMemo` (React) | `LecturerCoursesPage.tsx` | Tính toán filter list (semester/day options, courses filtered) để tránh render lại không cần thiết. |
-| `useAuthStore` (Zustand) | Các trang auth & course | Lưu thông tin user, bao gồm `lecturerId`, share cho mọi component. |
-
-Các hook này phối hợp với nhau để tạo nên một pipeline rõ ràng: form quản lý state → mutation gửi dữ liệu → query refetch → effect bổ sung lịch → UI hiển thị nhất quán.
-
----
-
-### **2. Login Hook - Extract Nested IDs**
-
-**File:** `src/hooks/useAuthQuery.ts`
-
-```typescript
-export const useLogin = () => {
-  const setUser = useAuthStore(state => state.setUser);
-  
-  return useMutation({
-    mutationFn: async ({ email, password }) => {
-      const response = await authApi.login(email, password);
-      return response.data;
-    },
-    
-    onSuccess: (data) => {
-      const { user, accessToken, refreshToken } = data;
-      
-      // ⭐ QUAN TRỌNG: Extract lecturerId/studentId từ nested objects
-      const lecturerId = user.lecturer?.id;  // user.lecturer có thể là null
-      const studentId = user.student?.id;    // user.student có thể là null
-      
-      console.log('✅ Extracted IDs:', { 
-        userId: user.id,      // "4a7a2a1e-..."
-        lecturerId,           // "c672474c-..." hoặc undefined
-        studentId             // undefined (vì role là LECTURER)
-      });
-      
-      // Normalize và lưu vào Zustand store
-      const normalized: User = {
-        id: String(user.id),
-        email: user.email,
-        full_name: user.fullName || user.full_name || '',
-        avatar: user.avatarUrl || user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
-        role: normalizeRole(user.role),
-        phone: user.phone,
-        createdAt: user.createdAt || new Date().toISOString(),
-        updatedAt: user.updatedAt,
-        lecturerId: lecturerId || undefined,  // ✅ Lưu lecturerId
-        studentId: studentId || undefined     // ✅ Lưu studentId
-      };
-      
-      setUser(normalized);
-      localStorage.setItem('token', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-    }
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ['lecturer-courses', lecturerId ?? 'unknown', debouncedSearchTerm],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => courseApi.getLecturerCourses({
+      search: debouncedSearchTerm || undefined,
+      page: pageParam,
+      limit: 9,
+      lecturerId,
+    }),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.meta?.hasNextPage ? allPages.length + 1 : undefined,
   });
-};
 ```
+- `debouncedSearchTerm` đổi → query tự refetch, vẫn đảm bảo không spam API.
+- Kết hợp với `IntersectionObserver`, khi sentinel xuất hiện thì gọi `fetchNextPage()` nếu `hasNextPage`.
 
-**Tại sao cần `user.lecturer?.id`?**
-- Optional chaining (`?.`) vì `lecturer` có thể là `null` (nếu role là STUDENT)
-- Tránh lỗi `Cannot read property 'id' of null`
+### 5.2 `useMemo`
+
+- **Vị trí**: `LecturerCoursesPage` (chuẩn hóa dữ liệu, tạo filter) và các phép tính khác.
+- **Tác dụng**:
+  - Chuyển đổi response của API thành `Course[]` dù backend trả `{ data: [...] }` hay `[...]`.
+  - Sinh `semesterOptions`, `dayOptions` từ dữ liệu đã đồng bộ.
+  - Tính `filteredCourses` (tìm kiếm, lọc, sắp xếp) chỉ khi input thay đổi.
+- **Lợi ích**: Tránh tính toán lại trên mỗi render, giúp UI mượt mà dù dữ liệu lớn.
+
+### 5.3 `useInfiniteQuery` & IntersectionObserver
+
+- `useInfiniteQuery` cung cấp `data.pages`, `fetchNextPage`, `hasNextPage`, `isFetchingNextPage` để điều phối phân trang vô hạn.
+- `getNextPageParam` đọc `meta` linh hoạt (ưu tiên `nextPage`, `hasNextPage`, `currentPage/totalPages`; fallback vào độ dài trang hiện tại so với `limit`).
+- Một `useEffect` khởi tạo `IntersectionObserver` theo dõi `<div ref={loadMoreRef}>`; khi phần tử đi vào viewport và vẫn còn trang kế → gọi `fetchNextPage()`.
+- Dùng `rootMargin` lớn (ví dụ `240px`) để nạp trước khi người dùng chạm đáy, giúp trải nghiệm mượt hơn.
+
+### 5.4 Các Hook Khác
+
+- `useForm` + `useFieldArray`: quản lý form và danh sách lịch động, cung cấp validation và error từng phần tử.
+- `useMutation`: xử lý login, create course/schedule, cung cấp trạng thái pending/success/error.
+- `useInfiniteQuery`: fetch danh sách courses theo trang, hỗ trợ cache & tự động tải thêm khi cần.
+- `useEffect`: đồng bộ schedules khi danh sách courses đổi; prefill dữ liệu trong chế độ edit.
+- `useRef`: `fetchedScheduleIds` (Set) bảo đảm mỗi course chỉ fetch lịch một lần.
 
 ---
 
-### **3. Create Course Page - Sử dụng `lecturerId`**
+## 6. Thao Tác Thực Tế
 
-**File:** `src/pages/CreateCoursePage.tsx`
-
-```typescript
-export const CreateCoursePage = () => {
-  const user = useAuthStore(state => state.user);
-  const navigate = useNavigate();
-  
-  // React Query mutation cho create course
-  const createCourseMutation = useMutation({
-    mutationFn: (data: CreateCourseData) => courseApi.createCourse(data),
-    
-    onSuccess: () => {
-      alert('✅ Tạo khóa học thành công!');
-      queryClient.invalidateQueries({ queryKey: ['lecturerCourses'] });
-      navigate('/lecturer/courses');
-    },
-    
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.message || 'Có lỗi xảy ra!';
-      alert('❌ ' + errorMessage);
-    }
-  });
-  
-  const onSubmit = async (data: CourseFormData) => {
-    // ⭐ KIỂM TRA lecturerId trước khi submit
-    if (!user?.lecturerId) {
-      alert('❌ Không tìm thấy thông tin Lecturer ID. Vui lòng đăng nhập lại!');
-      console.error('User object:', user);
-      return;
-    }
-    
-    console.log('👤 Current user:', user);
-    console.log('🆔 User ID:', user.id);           // userId
-    console.log('🎓 Lecturer ID:', user.lecturerId); // lecturerId
-    
-    try {
-      const courseData: CreateCourseData = {
-        courseCode: data.courseCode,
-        courseName: data.courseName,
-        description: data.description,
-        credits: Number(data.credits),
-        maxStudents: Number(data.maxStudents),
-        lecturerId: user.lecturerId  // ✅ Sử dụng lecturerId, KHÔNG phải user.id
-      };
-      
-      console.log('📤 Sending course data:', courseData);
-      await createCourseMutation.mutateAsync(courseData);
-      
-    } catch (err) {
-      console.error('❌ Submit error:', err);
-    }
-  };
-  
-  // ... Form JSX
-};
-```
-
-**Điểm quan trọng:**
-1. **Kiểm tra `user.lecturerId`** trước khi submit
-2. **KHÔNG dùng `user.id`** - đó là `userId`, không phải `lecturerId`
-3. **Console.log** để debug - giúp phát hiện lỗi nhanh
+1. **Đăng nhập** bằng tài khoản Lecturer.
+2. **Kiểm tra console**: phải thấy log `lecturerId` (ví dụ `c672474c-...`).
+3. **Truy cập** `/lecturer/courses/create`.
+4. **Điền form**:
+   - `courseCode`: chữ IN HOA + số, ví dụ `CS101`.
+   - `courseName`: tối thiểu 5 ký tự.
+   - `description`: tối thiểu 20 ký tự.
+   - `credits`: số 1-10.
+   - `maxStudents`: số 1-200.
+   - (Tuỳ chọn) thêm lịch học trong phần Schedule.
+5. **Submit** → kiểm tra console đảm bảo payload có `lecturerId`.
+6. **Thông báo thành công** xuất hiện, trang điều hướng về `/lecturer/courses`.
+7. **Xem lại danh sách**: course mới hiển thị; nếu lịch chưa hiện ngay, chờ `useEffect` fetch (sẽ thấy trạng thái `Đang tải lịch học...`).
 
 ---
 
-### **4. API Definition**
+## 7. Đồng Bộ Trong `LecturerCoursesPage`
 
-**File:** `src/pages/api.ts`
-
-```typescript
-// Request body type cho create course
-export type CreateCourseData = {
-    courseCode: string;
-    courseName: string;
-    description: string;
-    credits: number;
-    maxStudents: number;
-    lecturerId: string;  // ⭐ Backend yêu cầu UUID của LECTURER
-}
-
-// API function
-export const courseApi = {
-  createCourse: (data: CreateCourseData) => {
-    return api.post<Course>('/courses', data);
-  },
-  
-  getLecturerCourses: () => {
-    return api.get<Course[]>('/courses/my-courses');
-  },
-  
-  // ... other methods
-};
-```
-
-**Backend API Contract:**
-```
-POST /api/v1/courses
-Headers:
-  Authorization: Bearer <accessToken>
-Body:
-{
-  "courseCode": "CS101",
-  "courseName": "Web Programming", 
-  "description": "Learn web development",
-  "credits": 3,
-  "maxStudents": 50,
-  "lecturerId": "c672474c-572a-43a0-99f0-f4cb189ebb6c"  // UUID từ bảng LECTURER
-}
-
-Response (201 Created):
-{
-  "id": "course-uuid",
-  "courseCode": "CS101",
-  "courseName": "Web Programming",
-  "lecturerId": "c672474c-572a-43a0-99f0-f4cb189ebb6c",
-  "createdAt": "2025-10-28T10:00:00.000Z",
-  ...
-}
-```
+1. **Scroll vô hạn**: `IntersectionObserver` quan sát sentinel `<div ref={loadMoreRef}>`, khi `hasNextPage` bật → `fetchNextPage()` và hiển thị spinner `isFetchingNextPage` / thông báo “Đã hiển thị tất cả khóa học”.
+2. **Chuẩn hóa dữ liệu** bằng `useMemo` để xử lý mọi dạng trả về của API.
+3. **Tạo filter options** (`semesterOptions`, `dayOptions`) dựa trên dữ liệu kết hợp giữa API và `scheduleMap`.
+4. **Lọc & sắp xếp**: search (đã debounce), filter theo học kỳ/ngày, sort theo thời gian tạo/cập nhật hoặc tên (locale `vi`).
+5. **Hiển thị lịch**:
+   - Ưu tiên `scheduleMap[course.id]`.
+   - Nếu đang fetch: show loading text.
+   - Nếu trống: nhắc người dùng bổ sung lịch.
+6. **Hành động**: nút “Chỉnh sửa” dẫn tới `/lecturer/courses/:id/edit`; nút xóa bị disable (chỉ admin).
 
 ---
 
-### **5. Axios Interceptor - Auto Add Token**
+## 8. Gợi Ý Debug
 
-**File:** `src/pages/api.ts`
-
-```typescript
-// Axios instance với base URL
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://elearning.blog360.org/api/v1',
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Request interceptor - Tự động thêm Authorization header
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor - Xử lý lỗi 401 Unauthorized
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.error('❌ 401 Unauthorized - Token hết hạn hoặc không hợp lệ');
-      
-      // Clear localStorage và redirect về login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    
-    return Promise.reject(error);
-  }
-);
-```
-
-**Lợi ích:**
-- Tự động thêm token vào mọi request → Không cần thêm thủ công
-- Tự động xử lý 401 → User được redirect về login khi token hết hạn
+- **Thiếu lecturerId**: kiểm tra `useLogin`, đảm bảo tài khoản có role Lecturer và `user.lecturer?.id` không null.
+- **401 Unauthorized**: token chưa lưu hoặc đã hết hạn → xem interceptor, localStorage.
+- **courses.reduce is not a function**: đảm bảo đã chuẩn hóa dữ liệu trước khi thao tác.
+- **Lịch không xuất hiện**: mở network panel xem request `/schedules`; kiểm tra `fetchedScheduleIds` tránh fetch trùng.
+- **Search không hoạt động**: giảm `delay` trong `useDebounce` để thử, đảm bảo `debouncedSearchTerm` thay đổi.
+- **Không tải thêm trang**: kiểm tra `meta` backend (trả `hasNextPage`/`nextPage`), chắc chắn sentinel vẫn render và `IntersectionObserver` không bị cleanup sớm.
 
 ---
 
-## 🐛 Các Vấn Đề Đã Gặp & Cách Giải Quyết
+## 9. Checklist Trước Khi Release
 
-### **Issue 1: `courses.reduce is not a function`**
-
-**Nguyên nhân:**
-```typescript
-// Backend trả về:
-{
-  "data": [...],  // Courses array nằm trong data
-  "meta": {...}
-}
-
-// Frontend expect:
-const courses = response.data;  // ❌ courses là object, không phải array
-courses.reduce(...)  // ❌ Error!
-```
-
-**Giải pháp:**
-```typescript
-// Xử lý flexible response structure
-const rawData = coursesResponse?.data;
-let courses: Course[] = [];
-
-if (Array.isArray(rawData)) {
-  courses = rawData;  // Trường hợp trả về trực tiếp array
-} else if (rawData && typeof rawData === 'object') {
-  // Trường hợp trả về nested object
-  courses = rawData.data || rawData.courses || rawData.items || [];
-}
-```
+- [ ] Đăng nhập Lecturer lấy được `lecturerId`.
+- [ ] Submit form tạo course thành công, payload đúng chuẩn.
+- [ ] Course mới xuất hiện trong danh sách sau invalidate.
+- [ ] Lịch học (nếu có) hiển thị sau khi fetch bổ sung.
+- [ ] Ô tìm kiếm + debounce hoạt động (test với ký tự khác nhau).
+- [ ] Bộ lọc học kỳ/ngày và sort theo tên/thời gian hoạt động.
+- [ ] Cuộn đến cuối danh sách sẽ tự động tải thêm và hiển thị thông báo khi hết dữ liệu.
+- [ ] Tài khoản không phải Lecturer không truy cập được trang này.
 
 ---
 
-### **Issue 2: `401 Unauthorized` khi fetch courses**
-
-**Nguyên nhân:**
-```typescript
-// Login hook ban đầu:
-const { user, token } = data;  // ❌ Backend trả về "accessToken", không phải "token"
-localStorage.setItem('token', token);  // token = undefined
-```
-
-**Giải pháp:**
-```typescript
-// ✅ Đúng tên field từ backend
-const { user, accessToken, refreshToken } = data;
-localStorage.setItem('token', accessToken);  // ✅ Lưu accessToken
-localStorage.setItem('refreshToken', refreshToken);
-```
-
----
-
-### **Issue 3: `lecturerId must be a UUID`**
-
-**Nguyên nhân:**
-```typescript
-// ❌ Gửi userId thay vì lecturerId
-lecturerId: user.id  // "4a7a2a1e-..." (userId)
-```
-
-**Giải pháp:**
-```typescript
-// ✅ Gửi lecturerId từ nested object
-lecturerId: user.lecturerId  // "c672474c-..." (lecturerId)
-```
-
----
-
-### **Issue 4: `Lecturer not found`**
-
-**Nguyên nhân:**
-- Mặc dù gửi đúng UUID format, nhưng đó là `userId`, không phải `lecturerId`
-- Backend không tìm thấy record trong bảng `LECTURER` với `lecturerId = userId`
-
-**Debugging steps:**
-```typescript
-// 1. Check login response structure
-console.log('🔍 Login response:', JSON.stringify(user, null, 2));
-
-// Output:
-{
-  "id": "4a7a2a1e-...",  // <- userId
-  "lecturer": {
-    "id": "c672474c-...",  // <- lecturerId (đúng!)
-    "userId": "4a7a2a1e-..."
-  }
-}
-
-// 2. Extract correct ID
-const lecturerId = user.lecturer?.id;  // ✅ "c672474c-..."
-
-// 3. Verify before sending
-console.log('🎓 Lecturer ID:', lecturerId);
-console.log('📤 Sending:', { lecturerId });
-```
-
-**Final solution:**
-```typescript
-// useLogin hook
-const lecturerId = user.lecturer?.id;
-const normalized: User = {
-  ...otherFields,
-  lecturerId: lecturerId || undefined  // ✅ Lưu vào store
-};
-
-// CreateCoursePage
-if (!user?.lecturerId) {
-  alert('❌ Không tìm thấy Lecturer ID!');
-  return;
-}
-
-const courseData = {
-  ...formData,
-  lecturerId: user.lecturerId  // ✅ Sử dụng từ store
-};
-```
-
----
-
-## 🎯 Best Practices Áp Dụng
-
-### **1. Type Safety với TypeScript**
-
-```typescript
-// ✅ Định nghĩa rõ ràng types
-export type CreateCourseData = {
-    courseCode: string;
-    courseName: string;
-    description: string;
-    credits: number;
-    maxStudents: number;
-    lecturerId: string;  // Rõ ràng đây là lecturerId
-}
-
-// ✅ Type cho response
-export type Course = {
-    id: string;
-    courseCode: string;
-    courseName: string;
-    lecturerId: string;  // FK to LECTURER table
-    // ...
-}
-```
-
----
-
-### **2. Error Handling**
-
-```typescript
-// ✅ Handle errors ở nhiều levels
-const createCourseMutation = useMutation({
-  mutationFn: courseApi.createCourse,
-  
-  onSuccess: () => {
-    alert('✅ Thành công!');
-    queryClient.invalidateQueries(['lecturerCourses']);
-  },
-  
-  onError: (error: any) => {
-    // Extract error message từ backend
-    const message = error?.response?.data?.message || 'Có lỗi xảy ra!';
-    alert('❌ ' + message);
-    
-    // Log để debug
-    console.error('Create course error:', error);
-    console.error('Error details:', error?.response?.data);
-  }
-});
-```
-
----
-
-### **3. Loading States**
-
-```typescript
-// ✅ Hiển thị loading khi đang submit
-<button 
-  type="submit"
-  disabled={createCourseMutation.isPending}
-  className="..."
->
-  {createCourseMutation.isPending ? (
-    <>
-      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-      Đang tạo...
-    </>
-  ) : (
-    <>
-      <MdAdd className="text-xl" />
-      Tạo khóa học
-    </>
-  )}
-</button>
-```
-
----
-
-### **4. Data Refetching với React Query**
-
-```typescript
-// ✅ Tự động refetch sau khi mutation
-const createCourseMutation = useMutation({
-  mutationFn: courseApi.createCourse,
-  
-  onSuccess: () => {
-    // Invalidate query → React Query tự động refetch
-    queryClient.invalidateQueries({ queryKey: ['lecturerCourses'] });
-    
-    // Navigate về list page
-    navigate('/lecturer/courses');
-  }
-});
-```
-
-**Lợi ích:**
-- Danh sách courses tự động cập nhật
-- Không cần manually fetch lại
-- UI luôn sync với backend
-
----
-
-### **5. Validation với React Hook Form**
-
-```typescript
-const { register, handleSubmit, formState: { errors } } = useForm<CourseFormData>();
-
-// ✅ Validation rules inline
-<input
-  {...register('courseCode', {
-    required: 'Mã khóa học là bắt buộc',
-    pattern: {
-      value: /^[A-Z0-9]+$/,
-      message: 'Chỉ được chứa chữ IN HOA và số'
-    }
-  })}
-  className="..."
-/>
-
-{errors.courseCode && (
-  <p className="text-red-500 text-sm mt-1">
-    {errors.courseCode.message}
-  </p>
-)}
-```
-
----
-
-## 📂 Cấu Trúc Files Chi Tiết
-
-```
-src/
-├── pages/
-│   ├── CreateCoursePage.tsx       # Form tạo course
-│   │   ├── useForm() hook
-│   │   ├── useMutation() để create
-│   │   ├── Validation rules
-│   │   └── Error handling
-│   │
-│   ├── LecturerCoursesPage.tsx    # Danh sách courses
-│   │   ├── useQuery() để fetch
-│   │   ├── Statistics calculation
-│   │   └── Course cards display
-│   │
-│   └── api.ts                      # API client
-│       ├── axios instance
-│       ├── interceptors
-│       ├── courseApi methods
-│       └── Type definitions
-│
-├── hooks/
-│   └── useAuthQuery.ts             # Auth-related hooks
-│       ├── useLogin()
-│       ├── useRegisterStudent()
-│       ├── useRegisterLecturer()
-│       └── ID extraction logic  ⭐
-│
-├── stores/
-│   └── authStore.ts                # Zustand state management
-│       ├── user state
-│       ├── isAuthenticated
-│       └── setUser action
-│
-├── util/
-│   ├── authUtils.ts                # Auth utilities
-│   │   ├── User interface  ⭐
-│   │   ├── UserRole enum
-│   │   └── normalizeRole()
-│   │
-│   └── initSampleCourses.ts        # Mock data (không dùng nữa)
-│
-└── router/
-    └── index.tsx                   # Route definitions
-        ├── /lecturer/courses
-        └── /lecturer/courses/create
-```
-
----
-
-## 🚀 Cách Sử Dụng
-
-### **Bước 1: Đăng nhập với tài khoản Lecturer**
-
-```
-Email: lecturer@elearning.com
-Password: Lecturer@123
-```
-
-Sau khi login, check Console:
-```
-✅ Extracted IDs: {
-  userId: "4a7a2a1e-732d-4108-a868-eee9e265d8d0",
-  lecturerId: "c672474c-572a-43a0-99f0-f4cb189ebb6c",  // ✅ Phải có
-  studentId: undefined
-}
-```
-
----
-
-### **Bước 2: Truy cập trang Courses**
-
-- Click "Courses" trong sidebar
-- Hoặc: `/lecturer/courses`
-- Danh sách courses được fetch tự động qua React Query
-
----
-
-### **Bước 3: Tạo khóa học mới**
-
-1. Click "Tạo khóa học mới"
-2. Điền form (5 trường bắt buộc):
-   - Mã khóa học: `CS101` (chữ IN HOA + số)
-   - Tên: `Lập trình Web` (min 5 ký tự)
-   - Mô tả: min 20 ký tự
-   - Tín chỉ: 1-10
-   - Số học viên: 1-200
-
-3. Click "Tạo khóa học"
-
-4. Console logs:
-```
-👤 Current user: {id: "...", lecturerId: "c672474c-...", ...}
-🆔 User ID: 4a7a2a1e-...
-🎓 Lecturer ID: c672474c-...  // ✅ Đây là ID được gửi
-📤 Sending course data: {
-  courseCode: "CS101",
-  courseName: "Lập trình Web",
-  lecturerId: "c672474c-..."  // ✅ Đúng
-}
-```
-
-5. Thành công → Redirect về `/lecturer/courses`
-6. Danh sách tự động refetch và hiển thị course mới
-
----
-
-## 📊 Statistics & Features
-
-### **Danh sách khóa học:**
-- ✅ Tổng số khóa học
-- ✅ Tổng số học viên (sum của enrolled students)
-- ✅ Tổng số tín chỉ (sum của credits)
-- ✅ Course cards với thông tin đầy đủ
-- ✅ Responsive design
-
-### **Tạo khóa học:**
-- ✅ Form validation real-time
-- ✅ Loading states
-- ✅ Error messages từ backend
-- ✅ Auto redirect sau khi thành công
-- ✅ Auto refetch danh sách
-
----
-
-## 🔒 Phân Quyền
-
-### **Lecturer có thể:**
-- ✅ Tạo khóa học mới
-- ✅ Xem danh sách khóa học của mình
-- ✅ Chỉnh sửa khóa học (UI ready, logic pending)
-
-### **Lecturer KHÔNG thể:**
-- ❌ Xóa khóa học (chỉ Admin)
-- ❌ Xem khóa học của Lecturer khác
-- ❌ Thay đổi quyền sở hữu khóa học
-
----
-
-## 📋 Validation Rules
-
-| Trường | Quy tắc |
-|--------|---------|
-| Mã khóa học | Bắt buộc, regex: `/^[A-Z0-9]+$/` |
-| Tên khóa học | Bắt buộc, minLength: 5 |
-| Mô tả | Bắt buộc, minLength: 20 |
-| Số tín chỉ | Bắt buộc, min: 1, max: 10 |
-| Số học viên | Bắt buộc, min: 1, max: 200 |
-
----
-
-## ⚡ Features Pending
-
-- [ ] Edit course functionality
-- [ ] Delete course (Admin only)
-- [ ] Manage students in course
-- [ ] Course statistics dashboard
-- [ ] Search & filter courses
-- [ ] Pagination for course list
-- [ ] Bulk actions
-
----
-
-## 📦 Dependencies
-
-```json
-{
-  "@tanstack/react-query": "^5.x",  // Data fetching & caching
-  "axios": "^1.x",                   // HTTP client
-  "react-hook-form": "^7.x",         // Form validation
-  "react-router-dom": "^6.x",        // Routing
-  "react-icons": "^4.x",             // Icons
-  "zustand": "^4.x",                 // State management
-  "tailwindcss": "^3.x"              // Styling
-}
-```
-
----
-
-## 🎯 Tóm Tắt Kiến Thức Quan Trọng
-
-### **1. Database Design:**
-- Tách biệt authentication (USER) và business logic (LECTURER/STUDENT)
-- 1 user có thể có nhiều roles
-- Foreign keys: `LECTURER.userId → USER.userId`, `COURSE.lecturerId → LECTURER.lecturerId`
-
-### **2. Frontend Architecture:**
-- Zustand cho global state (user info)
-- React Query cho server state (courses, API calls)
-- React Hook Form cho form validation
-- Axios interceptors cho authentication
-
-### **3. Data Flow:**
-- Login → Extract nested IDs → Save to store
-- Create course → Use lecturerId from store → POST to API
-- Success → Invalidate query → Auto refetch → UI updates
-
-### **4. Key Learnings:**
-- ⭐ **userId ≠ lecturerId** - Đây là vấn đề quan trọng nhất
-- ⭐ Backend response structure - Cần parse đúng nested objects
-- ⭐ Token management - accessToken vs token field naming
-- ⭐ React Query - Automatic refetching và caching
-- ⭐ Error handling - Multiple levels (API, mutation, UI)
-
----
-
-## 📝 Ghi Chú Cho Mentor
-
-### **Những điểm đáng chú ý:**
-
-1. **Database Schema hiểu đúng:**
-   - Em đã hiểu rõ sự khác biệt giữa USER table và LECTURER table
-   - Biết cách extract đúng ID từ nested objects
-
-2. **API Integration:**
-   - Sử dụng React Query đúng cách (useMutation, useQuery)
-   - Hiểu về invalidation và refetching
-   - Error handling đầy đủ
-
-3. **Authentication Flow:**
-   - Hiểu về JWT tokens (accessToken, refreshToken)
-   - Axios interceptors tự động thêm Authorization header
-   - Xử lý 401 Unauthorized
-
-4. **Debugging Skills:**
-   - Sử dụng console.log hiệu quả
-   - Đọc error messages từ backend
-   - Trace qua nhiều layers (UI → API → Backend)
-
-5. **Code Quality:**
-   - TypeScript types đầy đủ
-   - Validation rules rõ ràng
-   - Component structure hợp lý
-   - Following React best practices
-
----
-
-✨ **Chức năng đã hoàn thiện và production-ready!**
-
-Mọi câu hỏi vui lòng liên hệ qua issue tracker hoặc team chat.
+## 10. Tóm Tắt Kiến Thức Cốt Lõi
+
+- **userId và lecturerId là hai giá trị khác nhau** – gửi sai ID là nguyên nhân chính gây lỗi “Lecturer not found”.
+- **Hooks phối hợp**:
+  - `useDebounce` + `useInfiniteQuery` → tìm kiếm mượt mà, tự động phân trang vô hạn.
+  - `useMemo` → tránh tính toán lại, đặc biệt với danh sách và filter phức tạp.
+  - `useMutation` → điều phối request POST/PATCH/DELETE, kết hợp invalidate để đồng bộ UI.
+  - `useForm` + `useFieldArray` → tạo form linh hoạt mà vẫn type-safe.
+- **Interceptor** đảm bảo mọi request có token và tự xử lý 401.
+- **Invalidation** sau mutation là chìa khóa để giữ dữ liệu nhất quán trên toàn ứng dụng.

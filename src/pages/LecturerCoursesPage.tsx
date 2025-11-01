@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDebounce } from '../hooks/useDebounce';
 import {
   MdPlayLesson,
@@ -12,6 +12,7 @@ import {
   MdOutlineSchedule,
 } from 'react-icons/md';
 import { courseApi, type Course, type CourseSchedule } from './api';
+import { useAuthStore } from '../stores/authStore';
 
 const DAY_OF_WEEK_LABELS: Record<string, string> = {
   MONDAY: 'Thứ Hai',
@@ -28,46 +29,160 @@ const formatDayOfWeek = (day: string | undefined) => {
   return DAY_OF_WEEK_LABELS[day] ?? day;
 };
 
+const PAGE_SIZE = 9;
+type CoursesPageResult = {
+  items: Course[];
+  meta: Record<string, unknown>;
+};
+
 export default function LecturerCoursesPage() {
   const navigate = useNavigate();
+  const lecturerId = useAuthStore((state) => state.user?.lecturerId);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  // Fetch courses từ API
-  const { data: coursesResponse, isLoading, error } = useQuery({
-    queryKey: ['lecturer-courses', debouncedSearchTerm],
-    queryFn: async () => {
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery<CoursesPageResult>({
+    queryKey: ['lecturer-courses', lecturerId ?? 'unknown', debouncedSearchTerm],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const page = typeof pageParam === 'number' ? pageParam : 1;
       const response = await courseApi.getLecturerCourses({
         search: debouncedSearchTerm || undefined,
+        page,
+        limit: PAGE_SIZE,
+        lecturerId: lecturerId ?? undefined,
       });
-      return (response as any)?.data ?? response;
+
+      const payload = (response as any)?.data ?? response;
+      const nestedData = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.courses)
+        ? payload.courses
+        : [];
+
+      const meta =
+        ((payload?.meta as Record<string, unknown> | undefined) ??
+          (payload?.pagination as Record<string, unknown> | undefined) ??
+          (payload?.metaData as Record<string, unknown> | undefined) ??
+          {}) as Record<string, unknown>;
+
+      return {
+        items: (nestedData ?? []) as Course[],
+        meta,
+      };
     },
-    placeholderData: (previousData) => previousData,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage) {
+        return undefined;
+      }
+
+      const meta = (lastPage.meta ?? {}) as Record<string, unknown>;
+      const nextPageFromMeta = meta?.nextPage ?? meta?.next ?? meta?.next_page;
+      if (typeof nextPageFromMeta === 'number') {
+        return nextPageFromMeta;
+      }
+
+      const hasNextFlag =
+        (meta?.hasNextPage ?? meta?.hasNext ?? meta?.has_more ?? meta?.hasMore) as
+          | boolean
+          | undefined;
+
+      if (hasNextFlag === false) {
+        return undefined;
+      }
+
+      if (hasNextFlag === true) {
+        const currentPage =
+          (meta?.currentPage ?? meta?.page ?? meta?.pageNumber ?? meta?.page_index) as
+            | number
+            | undefined;
+        if (typeof currentPage === 'number') {
+          return currentPage + 1;
+        }
+        return allPages.length + 1;
+      }
+
+      const currentPage =
+        (meta?.currentPage ?? meta?.page ?? meta?.pageNumber ?? meta?.page_index) as
+          | number
+          | undefined;
+      const totalPages =
+        (meta?.totalPages ?? meta?.totalPage ?? meta?.lastPage ?? meta?.pageCount) as
+          | number
+          | undefined;
+
+      if (
+        typeof currentPage === 'number' &&
+        typeof totalPages === 'number' &&
+        currentPage < totalPages
+      ) {
+        return currentPage + 1;
+      }
+
+      if (lastPage.items.length < PAGE_SIZE) {
+        return undefined;
+      }
+
+      return allPages.length + 1;
+    },
   });
 
-  // Backend trả về: { data: [...], meta: {...} }
-  const rawData = (coursesResponse as any)?.data ?? coursesResponse;
-
-
   const courses = useMemo<Course[]>(() => {
-    if (Array.isArray(rawData)) {
-      return rawData;
+    if (!data?.pages?.length) {
+      return [];
     }
 
-    if (rawData && typeof rawData === 'object') {
-      const nested = (rawData as any).data ?? (rawData as any).courses;
-      if (Array.isArray(nested)) {
-        return nested;
-      }
-    }
-
-    return [];
-  }, [rawData]);
+    return data.pages.flatMap((page) => page.items ?? []);
+  }, [data]);
 
   const [semesterFilter, setSemesterFilter] = useState<string>('ALL');
   const [dayFilter, setDayFilter] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest');
   const [scheduleMap, setScheduleMap] = useState<Record<string, CourseSchedule[]>>({});
   const fetchedScheduleIds = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    setScheduleMap({});
+    fetchedScheduleIds.current.clear();
+  }, [debouncedSearchTerm, lecturerId]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting) {
+          return;
+        }
+        if (!hasNextPage || isFetchingNextPage) {
+          return;
+        }
+        void fetchNextPage();
+      },
+      {
+        root: null,
+        rootMargin: '240px 0px',
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, courses.length]);
 
   const semesterOptions = useMemo(() => {
     const semesters = new Set<string>();
@@ -201,6 +316,8 @@ export default function LecturerCoursesPage() {
     return results;
   }, [courses, scheduleMap, semesterFilter, dayFilter, sortBy]);
 
+  const latestCourse = filteredCourses[0] ?? courses[0];
+
 
   const formatDate = (date?: string) => {
     if (!date) return '—';
@@ -250,7 +367,7 @@ export default function LecturerCoursesPage() {
             <div className="flex flex-wrap gap-3 text-sm text-secondary">
               <div className="inline-flex items-center gap-2 rounded-full bg-component/80 px-4 py-2 font-medium backdrop-blur text-main dark:bg-component/40 dark:text-white">
                 <MdOutlineSchedule className="h-5 w-5 text-primary" />
-                Cập nhật mới nhất {formatDate(courses[0]?.updatedAt || courses[0]?.createdAt)}
+                Cập nhật mới nhất {formatDate(latestCourse?.updatedAt || latestCourse?.createdAt)}
               </div>
             </div>
           </div>
@@ -390,18 +507,18 @@ export default function LecturerCoursesPage() {
                         {primarySchedule?.semester || (isLoadingSchedules ? 'Đang tải lịch học...' : 'Lịch chưa cập nhật')}
                       </span>
                       <p className="text-sm text-secondary dark:text-gray-200">
-                      {primarySchedule ? (
-                        <>
-                          {formatDayOfWeek(primarySchedule.dayOfWeek)} <br />
-                          {primarySchedule.startTime} - {primarySchedule.endTime} <br />
-                          Phòng {primarySchedule.room}
-                        </>
-                      ) : isLoadingSchedules ? (
-                        'Đang tải lịch học, vui lòng chờ trong giây lát.'
-                      ) : (
-                        'Thêm lịch học để sinh viên nắm rõ thời gian.'
-                      )}
-                    </p>
+                        {primarySchedule ? (
+                          <>
+                            {formatDayOfWeek(primarySchedule.dayOfWeek)} <br />
+                            {primarySchedule.startTime} - {primarySchedule.endTime} <br />
+                            Phòng {primarySchedule.room}
+                          </>
+                        ) : isLoadingSchedules ? (
+                          'Đang tải lịch học, vui lòng chờ trong giây lát.'
+                        ) : (
+                          'Thêm lịch học để sinh viên nắm rõ thời gian.'
+                        )}
+                      </p>
                     </div>
                     <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <MdPlayLesson className="h-6 w-6" />
@@ -511,6 +628,15 @@ export default function LecturerCoursesPage() {
             );
           })}
         </div>
+      )}
+      <div ref={loadMoreRef} className="h-1" aria-hidden="true" />
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-6">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+        </div>
+      )}
+      {!hasNextPage && courses.length > 0 && (
+        <p className="text-center text-sm text-secondary">Đã hiển thị tất cả khóa học</p>
       )}
     </div>
   );

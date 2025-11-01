@@ -147,6 +147,7 @@ export type GetLecturerCoursesParams = {
   search?: string;
   page?: number;
   limit?: number;
+  lecturerId?: string;
 };
 
 export const courseApi = {
@@ -155,7 +156,7 @@ export const courseApi = {
     return api.post('/courses', data);
   },
 
-  // Lấy danh sách courses của lecturer (có hỗ trợ tìm kiếm & phân trang)
+  // Lấy danh sách courses (hỗ trợ tìm kiếm & phân trang)
   getLecturerCourses: async (params?: GetLecturerCoursesParams) => {
     const queryParams: Record<string, string | number> = {};
 
@@ -171,7 +172,11 @@ export const courseApi = {
       queryParams.limit = params.limit;
     }
 
-    return api.get('/courses/my-courses', { params: queryParams });
+    if (params?.lecturerId) {
+      queryParams.lecturerId = params.lecturerId;
+    }
+
+    return api.get('/courses', { params: queryParams });
   },
 
   // Thêm lịch học cho course
