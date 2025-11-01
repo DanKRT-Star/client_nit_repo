@@ -29,7 +29,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.error('401 Unauthorized - Token có thể đã hết hạn');
       // Có thể redirect về trang login
-      // window.location.href = '/login';
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
