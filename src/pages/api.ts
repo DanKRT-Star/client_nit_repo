@@ -159,16 +159,11 @@ export type GetLecturerCoursesParams = {
 export const courseApi = {
   // Tạo course mới
   createCourse: async (data: CreateCourseData, thumbnailFile?: File) => {
-    // Nếu có file → dùng FormData với key "thumbnail"
+    // Nếu có file → dùng FormData với JSON Blob
     if (thumbnailFile) {
       const formData = new FormData();
-      formData.append('courseCode', data.courseCode);
-      formData.append('courseName', data.courseName);
-      formData.append('description', data.description);
-      formData.append('credits', data.credits.toString());
-      formData.append('maxStudents', data.maxStudents.toString());
-      formData.append('lecturerId', data.lecturerId);
       formData.append('thumbnail', thumbnailFile);
+      formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
 
       return api.post('/courses', formData);
     }
@@ -232,19 +227,11 @@ export const courseApi = {
 
   // Cập nhật course
   updateCourse: async (courseId: string, data: Partial<CreateCourseData>, thumbnailFile?: File) => {
-    // Nếu có file → dùng FormData với key "thumbnail"
+    // Nếu có file → dùng FormData với JSON Blob
     if (thumbnailFile) {
       const formData = new FormData();
-      
-      // Append từng field một cách rõ ràng
-      if (data.courseCode !== undefined) formData.append('courseCode', data.courseCode);
-      if (data.courseName !== undefined) formData.append('courseName', data.courseName);
-      if (data.description !== undefined) formData.append('description', data.description);
-      if (data.credits !== undefined) formData.append('credits', String(data.credits));
-      if (data.maxStudents !== undefined) formData.append('maxStudents', String(data.maxStudents));
-      if (data.lecturerId !== undefined) formData.append('lecturerId', data.lecturerId);
-      
-      formData.append('thumbnail', thumbnailFile); // Key chính xác là "thumbnail"
+      formData.append('thumbnail', thumbnailFile);
+      formData.append('data', new Blob([JSON.stringify(data)], { type: 'application/json' }));
 
       return api.patch(`/courses/${courseId}`, formData);
     }
