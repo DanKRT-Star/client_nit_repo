@@ -4,6 +4,7 @@ import { useForm, useFieldArray, type FieldError } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { courseApi, type Course, type CourseSchedule, type CreateCourseData, type CreateScheduleData } from './api';
 import { useAuthStore } from '../stores/authStore';
+import { MdCloudUpload } from 'react-icons/md';
 
 type ScheduleFormData = {
   id?: string;
@@ -30,7 +31,8 @@ type CourseFormData = {
 export default function CreateCoursePage() {
   const { courseId } = useParams<{ courseId?: string }>();
   const isEditMode = Boolean(courseId);
-
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const {
     control,
     register,
@@ -98,6 +100,30 @@ export default function CreateCoursePage() {
     'SUNDAY',
   ];
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      alert('Chỉ chấp nhận file ảnh!');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Kích thước ảnh không được vượt quá 5MB!');
+      return;
+    }
+    
+    setThumbnailFile(file);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setThumbnailPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+
 const calculateWeeksBetween = (startDate: string, endDate: string) => {
   if (!startDate || !endDate) return 0;
   const start = new Date(startDate);
@@ -137,6 +163,11 @@ useEffect(() => {
     maxStudents: detail.maxStudents ?? 0,
     schedules: scheduleItems,
   });
+
+  // Set preview nếu có thumbnailUrl
+  if (detail.thumbnailUrl) {
+    setThumbnailPreview(detail.thumbnailUrl);
+  }
 }, [isEditMode, courseDetail, scheduleDetail, reset]);
 
   const handleAddSchedule = () => {
@@ -159,7 +190,7 @@ const handleRemoveSchedule = (index: number) => {
 
   // Mutation để tạo course với API backend
   const createCourseMutation = useMutation({
-    mutationFn: (data: CreateCourseData) => courseApi.createCourse(data),
+    mutationFn: ({ data, file }: { data: CreateCourseData; file?: File }) => courseApi.createCourse(data, file),
   });
 
 const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingSchedules;
@@ -185,6 +216,13 @@ const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingS
   if (isEditMode && courseId) {
     setIsSavingSchedules(true);
     try {
+      // PATCH không hỗ trợ upload file, chỉ JSON
+      if (thumbnailFile) {
+        alert('⚠️ Chỉnh sửa course không hỗ trợ upload file trực tiếp. Vui lòng upload ảnh lên dịch vụ lưu trữ và nhập URL.');
+        setIsSavingSchedules(false);
+        return;
+      }
+      
       await courseApi.updateCourse(courseId, {
         courseCode: data.courseCode,
         courseName: data.courseName,
@@ -258,7 +296,7 @@ const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingS
       lecturerId: user.lecturerId, // Sử dụng lecturerId từ bảng LECTURER
     };
 
-    const response = await createCourseMutation.mutateAsync(courseData);
+    const response = await createCourseMutation.mutateAsync({ data: courseData, file: thumbnailFile || undefined });
     const responseData = (response as any)?.data ?? response;
     const normalizedCourse = responseData?.data ?? responseData;
     const createdCourseId =
@@ -401,6 +439,63 @@ if (isEditMode && !courseDetail) {
               {errors.description && (
                 <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>
               )}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-main mb-3 dark:text-white">
+                Ảnh thumbnail của khóa học
+              </label>
+              
+              {/* Preview ảnh nếu có */}
+              {thumbnailPreview && (
+                <div className="mb-3 relative w-full">
+                  <div className="relative h-48 w-full rounded-lg overflow-hidden border-2 border-primary/20">
+                    <img 
+                      src={thumbnailPreview} 
+                      alt="Preview thumbnail" 
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThumbnailFile(null);
+                        setThumbnailPreview(null);
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-colors"
+                      title="Xóa ảnh"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* File input */}
+              <div className="relative">
+                <input
+                  type="file"
+                  id="thumbnail-upload"
+                  accept="image/*"
+                  onChange={handleThumbnailChange}
+                  disabled={isProcessing}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="thumbnail-upload"
+                  className={`flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-dashed border-primary/30 rounded-lg cursor-pointer transition-all hover:border-primary/50 hover:bg-primary/10 ${
+                    isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <MdCloudUpload className="h-5 w-5 text-primary" />
+                  <span className="text-sm text-primary font-medium">
+                    {thumbnailPreview ? 'Chọn ảnh khác' : 'Chọn ảnh từ máy tính'}
+                  </span>
+                </label>
+              </div>
+              
+              <p className="text-xs text-secondary mt-2">
+                Tối đa 5MB. Hỗ trợ: JPG, PNG, WebP. Ảnh sẽ được lưu trên Cloudflare R2
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

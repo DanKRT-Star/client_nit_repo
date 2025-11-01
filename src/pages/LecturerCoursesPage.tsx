@@ -498,8 +498,24 @@ export default function LecturerCoursesPage() {
                 key={course.id}
                 className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-color/40 bg-surface/80 shadow-xl shadow-primary/10 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-component/80 hover:shadow-2xl hover:shadow-primary/30 dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10"
               >
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 dark:from-primary/20 dark:via-primary/10">
-                  <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/15 blur-2xl" />
+                {course.thumbnailUrl && (
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={course.courseName}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  </div>
+                )}
+                <div className={`relative overflow-hidden ${course.thumbnailUrl ? 'p-6' : 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 dark:from-primary/20 dark:via-primary/10'}`}>
+                  {!course.thumbnailUrl && (
+                    <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/15 blur-2xl" />
+                  )}
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-3">
                       <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-main backdrop-blur dark:bg-primary/20 dark:text-white">
@@ -520,9 +536,11 @@ export default function LecturerCoursesPage() {
                         )}
                       </p>
                     </div>
-                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <MdPlayLesson className="h-6 w-6" />
-                    </span>
+                    {!course.thumbnailUrl && (
+                      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <MdPlayLesson className="h-6 w-6" />
+                      </span>
+                    )}
                   </div>
                 </div>
 

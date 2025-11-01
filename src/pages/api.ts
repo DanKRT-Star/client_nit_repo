@@ -19,8 +19,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Cho axios tự thay đổi header nếu là FormData (cần để axios tự thêm boundary)
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
   return config;
-});
+}, (error) => Promise.reject(error));
 
 // Response interceptor để bắt lỗi 401
 api.interceptors.response.use(
@@ -66,6 +70,7 @@ export type CreateCourseData = {
     credits: number;
     maxStudents: number;
     lecturerId: string; // Backend yêu cầu UUID
+    thumbnailUrl?: string;
 }
 
 export type CourseSchedule = {
@@ -108,6 +113,7 @@ export type Course = {
     createdAt: string;
     updatedAt: string;
     schedules?: CourseSchedule[];
+    thumbnailUrl?: string;
 }
 
 // ==== AUTH API ====
@@ -152,7 +158,22 @@ export type GetLecturerCoursesParams = {
 
 export const courseApi = {
   // Tạo course mới
-  createCourse: async (data: CreateCourseData) => {
+  createCourse: async (data: CreateCourseData, thumbnailFile?: File) => {
+    // Nếu có file → dùng FormData với key "thumbnail"
+    if (thumbnailFile) {
+      const formData = new FormData();
+      formData.append('courseCode', data.courseCode);
+      formData.append('courseName', data.courseName);
+      formData.append('description', data.description);
+      formData.append('credits', data.credits.toString());
+      formData.append('maxStudents', data.maxStudents.toString());
+      formData.append('lecturerId', data.lecturerId);
+      formData.append('thumbnail', thumbnailFile);
+
+      return api.post('/courses', formData);
+    }
+
+    // Nếu không có file → dùng JSON bình thường
     return api.post('/courses', data);
   },
 
@@ -210,7 +231,25 @@ export const courseApi = {
   },
 
   // Cập nhật course
-  updateCourse: async (courseId: string, data: Partial<CreateCourseData>) => {
+  updateCourse: async (courseId: string, data: Partial<CreateCourseData>, thumbnailFile?: File) => {
+    // Nếu có file → dùng FormData với key "thumbnail"
+    if (thumbnailFile) {
+      const formData = new FormData();
+      
+      // Append từng field một cách rõ ràng
+      if (data.courseCode !== undefined) formData.append('courseCode', data.courseCode);
+      if (data.courseName !== undefined) formData.append('courseName', data.courseName);
+      if (data.description !== undefined) formData.append('description', data.description);
+      if (data.credits !== undefined) formData.append('credits', String(data.credits));
+      if (data.maxStudents !== undefined) formData.append('maxStudents', String(data.maxStudents));
+      if (data.lecturerId !== undefined) formData.append('lecturerId', data.lecturerId);
+      
+      formData.append('thumbnail', thumbnailFile); // Key chính xác là "thumbnail"
+
+      return api.patch(`/courses/${courseId}`, formData);
+    }
+
+    // Nếu không có file → dùng JSON bình thường
     return api.patch(`/courses/${courseId}`, data);
   },
 

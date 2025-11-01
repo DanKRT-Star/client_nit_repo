@@ -41,6 +41,7 @@ Tài liệu này cô đọng lại toàn bộ kiến thức cần thiết để 
 - **userId ≠ lecturerId**: dù cùng một con người, backend tách hai bảng để dễ mở rộng đa vai trò. Tạo course phải dùng `lecturerId`.
 - **JWT Access Token**: mọi request cần gửi token; axios interceptor đã tự thêm.
 - **Schedule**: backend có thể trả lịch học trong payload course hoặc cần gọi thêm `/schedules?courseId=...`. Frontend đã chuẩn bị cả hai trường hợp.
+- **Thumbnail**: trường `thumbnailUrl` tùy chọn (URL string) để tăng khả năng nhận diện khóa học; render trong card với fallback tự động khi ảnh lỗi hoặc không tồn tại.
 
 ### 2.3 Endpoint Chính
 
@@ -82,12 +83,14 @@ Tài liệu này cô đọng lại toàn bộ kiến thức cần thiết để 
 
 ### Bước 3 – Submit Form
 
-1. Người dùng điền form và nhấn submit.
+1. Người dùng điền form (tên, mã, mô tả, tín chỉ, số học viên, **thumbnail** – tùy chọn) và nhấn submit.
+   - **Thumbnail**: Chọn file ảnh từ máy tính (JPG/PNG/WebP, tối đa 5MB). Preview tự động hiển thị ngay khi chọn ảnh.
 2. `onSubmit` kiểm tra `user?.lecturerId`. Nếu thiếu → cảnh báo đăng nhập lại.
 3. Chuẩn hóa payload `CreateCourseData`: ép kiểu số (`credits`, `maxStudents`), gán `lecturerId`.
-4. Gọi `createCourseMutation.mutateAsync(payload)` (POST `/courses`).
-5. Thành công → hiện thông báo → `invalidateQueries({ queryKey: ['lecturer-courses'] })` → điều hướng `/lecturer/courses`.
-6. Thất bại → hiển thị thông báo lỗi dựa trên `error.response?.data?.message`.
+4. **Xử lý ảnh**: Nếu có file, gửi `FormData` với key `thumbnail`; backend upload lên Cloudflare R2 và trả về URL.
+5. Gọi `createCourseMutation.mutateAsync({ data: payload, file: thumbnailFile })` (POST `/courses`).
+6. Thành công → hiện thông báo → `invalidateQueries({ queryKey: ['lecturer-courses'] })` → điều hướng `/lecturer/courses`.
+7. Thất bại → hiển thị thông báo lỗi dựa trên `error.response?.data?.message`.
 
 ### Bước 4 – Tạo/Cập Nhật Lịch Học (Tuỳ Chọn)
 
@@ -166,6 +169,7 @@ Tài liệu này cô đọng lại toàn bộ kiến thức cần thiết để 
    - `courseCode`: chữ IN HOA + số, ví dụ `CS101`.
    - `courseName`: tối thiểu 5 ký tự.
    - `description`: tối thiểu 20 ký tự.
+   - **`thumbnail`**: (tùy chọn) chọn file ảnh từ máy tính (JPG/PNG/WebP, tối đa 5MB). Ảnh sẽ được upload lên Cloudflare R2.
    - `credits`: số 1-10.
    - `maxStudents`: số 1-200.
    - (Tuỳ chọn) thêm lịch học trong phần Schedule.
@@ -181,11 +185,12 @@ Tài liệu này cô đọng lại toàn bộ kiến thức cần thiết để 
 2. **Chuẩn hóa dữ liệu** bằng `useMemo` để xử lý mọi dạng trả về của API.
 3. **Tạo filter options** (`semesterOptions`, `dayOptions`) dựa trên dữ liệu kết hợp giữa API và `scheduleMap`.
 4. **Lọc & sắp xếp**: search (đã debounce), filter theo học kỳ/ngày, sort theo thời gian tạo/cập nhật hoặc tên (locale `vi`).
-5. **Hiển thị lịch**:
+5. **Hiển thị thumbnail**: mỗi card course hiển thị `thumbnailUrl` (URL từ Cloudflare R2) ở đầu (nếu có), kèm `onError` ẩn ảnh lỗi, gradient mờ phía dưới. Nếu không có thumbnail, hiển thị gradient đẹp mắt với icon mặc định.
+6. **Hiển thị lịch**:
    - Ưu tiên `scheduleMap[course.id]`.
    - Nếu đang fetch: show loading text.
    - Nếu trống: nhắc người dùng bổ sung lịch.
-6. **Hành động**: nút “Chỉnh sửa” dẫn tới `/lecturer/courses/:id/edit`; nút xóa bị disable (chỉ admin).
+7. **Hành động**: nút "Chỉnh sửa" dẫn tới `/lecturer/courses/:id/edit`; nút xóa bị disable (chỉ admin).
 
 ---
 
@@ -204,7 +209,9 @@ Tài liệu này cô đọng lại toàn bộ kiến thức cần thiết để 
 
 - [ ] Đăng nhập Lecturer lấy được `lecturerId`.
 - [ ] Submit form tạo course thành công, payload đúng chuẩn.
+- [ ] Upload ảnh lên Cloudflare R2 thành công (nếu có file), backend trả về public URL.
 - [ ] Course mới xuất hiện trong danh sách sau invalidate.
+- [ ] Thumbnail (nếu có) hiển thị đúng trong card course với hiệu ứng hover đẹp mắt.
 - [ ] Lịch học (nếu có) hiển thị sau khi fetch bổ sung.
 - [ ] Ô tìm kiếm + debounce hoạt động (test với ký tự khác nhau).
 - [ ] Bộ lọc học kỳ/ngày và sort theo tên/thời gian hoạt động.
@@ -223,3 +230,4 @@ Tài liệu này cô đọng lại toàn bộ kiến thức cần thiết để 
   - `useForm` + `useFieldArray` → tạo form linh hoạt mà vẫn type-safe.
 - **Interceptor** đảm bảo mọi request có token và tự xử lý 401.
 - **Invalidation** sau mutation là chìa khóa để giữ dữ liệu nhất quán trên toàn ứng dụng.
+- **Thumbnail**: trường tùy chọn để tăng tính hấp dẫn, dễ nhận diện khóa học; hỗ trợ upload file trực tiếp từ máy tính (JPG/PNG/WebP, tối đa 5MB) với key `thumbnail` trong FormData; backend lưu ảnh lên Cloudflare R2 và trả về URL trong `thumbnailUrl`; hiển thị trong card với fallback ẩn khi lỗi và gradient/icon mặc định nếu thiếu ảnh.
