@@ -207,19 +207,12 @@ const lecturerId = user.lecturer?.id;  // "c672474c-572a-43a0-99f0-f4cb189ebb6c"
 │ Frontend: onSuccess callback             │
 │ - Show success message                   │
 │ - Invalidate "lecturerCourses" query     │
-│ - React Query auto refetch courses list  │
-│ - Navigate to /lecturer/courses          │
-└────────┬─────────────────────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│ LecturerCoursesPage auto updates         │
 └──────────────────────────────────────────┘
 ```
 
 ---
 
-### **3. Create Schedule Flow (sau khi Course được tạo)**
+### **3. Create / Update Schedule Flow**
 
 ```
 ┌─────────────────────────┐
@@ -231,31 +224,33 @@ const lecturerId = user.lecturer?.id;  // "c672474c-572a-43a0-99f0-f4cb189ebb6c"
 ┌──────────────────────────────────────────┐
 │ CreateCoursePage.tsx                     │
 │ - useFieldArray lưu danh sách schedules  │
-│ - Sau khi createCourseMutation thành công│
-│   → lấy courseId từ response             │
+│ - Nếu tạo mới: đợi mutate course xong    │
+│   để lấy courseId                        │
+│ - Nếu chỉnh sửa: dùng courseId từ params │
 └─────────────┬────────────────────────────┘
               │
               ▼
 ┌──────────────────────────────────────────┐
 │ Chuẩn hóa schedule payload               │
-│ - Duyệt từng schedule                    │
-│ - Ép kiểu totalWeeks về number           │
-│ - Chuyển startDate/endDate sang ISO      │
-│ - Gắn courseId mới nhận                  │
+│ - Ép totalWeeks về number                │
+│ - Auto tính totalWeeks khi đổi ngày      │
+│ - Chuyển start/endDate sang ISO          │
+│ - Chia 3 nhóm: mới / cập nhật / xoá      │
 └─────────────┬────────────────────────────┘
               │
               ▼
 ┌──────────────────────────────────────────┐
-│ Promise.all(createSchedule)              │
-│ - POST /api/v1/schedules cho từng item   │
-│ - Bắt lỗi riêng cho nhóm schedules       │
-│ - Alert thông báo thành công/thất bại    │
+│ Gửi API song song                        │
+│ - POST /api/v1/schedules (lịch mới)      │
+│ - PATCH /api/v1/schedules/{id} (lịch sửa)│
+│ - DELETE /api/v1/schedules/{id} (lịch xoá)│
+│ - Each promise riêng, alert nếu lỗi      │
 └─────────────┬────────────────────────────┘
               │
               ▼
 ┌──────────────────────────────────────────┐
-│ Điều hướng về /lecturer/courses          │
-│ - Danh sách Courses fetch lại            │
+│ invalidate ['lecturer-courses'] + điều   │
+│ hướng về /lecturer/courses               │
 └──────────────────────────────────────────┘
 ```
 
@@ -335,9 +330,9 @@ export interface User {
 |----------------|-------------|----------------|
 | `useForm` (react-hook-form) | `CreateCoursePage.tsx` | Khởi tạo state form, handle submit, validate input đồng thời đảm bảo type-safe. |
 | `useFieldArray` (react-hook-form) | `CreateCoursePage.tsx` | Quản lý danh sách lịch học động (thêm/xóa nhiều schedule cùng lúc) với metadata và lỗi riêng cho từng phần tử. |
-| `useMutation` (React Query) | `CreateCoursePage.tsx` | Gửi request `POST /courses` và lần lượt `POST /schedules`, xử lý loading, success, error. |
+| `useMutation` (React Query) | `CreateCoursePage.tsx` | Gửi `POST /courses` (tạo mới) hoặc `PATCH /courses/{id}` (chỉnh sửa) rồi `POST/PATCH/DELETE /schedules`, quản lý loading và lỗi. |
 | `useQuery` (React Query) | `LecturerCoursesPage.tsx` | Fetch danh sách khóa học qua `GET /courses/my-courses`, tự động refetch sau invalidate. |
-| `useEffect` (React) | `LecturerCoursesPage.tsx` | Khi courses thay đổi, fetch thêm lịch học cho từng course bằng `GET /schedules?courseId=...` và ghép vào state cục bộ. |
+| `useEffect` (React) | `CreateCoursePage.tsx`, `LecturerCoursesPage.tsx` | Prefill dữ liệu khi chỉnh sửa, tính lại totalWeeks, fetch thêm lịch học bằng `GET /schedules?courseId=...` và ghép vào state cục bộ. |
 | `useMemo` (React) | `LecturerCoursesPage.tsx` | Tính toán filter list (semester/day options, courses filtered) để tránh render lại không cần thiết. |
 | `useAuthStore` (Zustand) | Các trang auth & course | Lưu thông tin user, bao gồm `lecturerId`, share cho mọi component. |
 

@@ -143,15 +143,35 @@ export const authApi = {
 };
 
 // ==== COURSE API ====
+export type GetLecturerCoursesParams = {
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
 export const courseApi = {
   // Tạo course mới
   createCourse: async (data: CreateCourseData) => {
     return api.post('/courses', data);
   },
 
-  // Lấy danh sách courses của lecturer
-  getLecturerCourses: async () => {
-    return api.get('/courses/my-courses');
+  // Lấy danh sách courses của lecturer (có hỗ trợ tìm kiếm & phân trang)
+  getLecturerCourses: async (params?: GetLecturerCoursesParams) => {
+    const queryParams: Record<string, string | number> = {};
+
+    if (params?.search && params.search.trim() !== '') {
+      queryParams.search = params.search.trim();
+    }
+
+    if (typeof params?.page === 'number') {
+      queryParams.page = params.page;
+    }
+
+    if (typeof params?.limit === 'number') {
+      queryParams.limit = params.limit;
+    }
+
+    return api.get('/courses/my-courses', { params: queryParams });
   },
 
   // Thêm lịch học cho course
@@ -169,6 +189,16 @@ export const courseApi = {
     });
   },
 
+  // Cập nhật lịch học
+  updateSchedule: async (scheduleId: string, data: Partial<CreateScheduleData>) => {
+    return api.patch(`/schedules/${scheduleId}`, data);
+  },
+
+  // Xóa lịch học
+  deleteSchedule: async (scheduleId: string) => {
+    return api.delete(`/schedules/${scheduleId}`);
+  },
+
   // Lấy chi tiết course
   getCourseById: async (courseId: string) => {
     return api.get(`/courses/${courseId}`);
@@ -176,7 +206,7 @@ export const courseApi = {
 
   // Cập nhật course
   updateCourse: async (courseId: string, data: Partial<CreateCourseData>) => {
-    return api.put(`/courses/${courseId}`, data);
+    return api.patch(`/courses/${courseId}`, data);
   },
 
   // Xóa course

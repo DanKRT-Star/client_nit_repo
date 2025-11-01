@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useDebounce } from '../hooks/useDebounce';
 import {
   MdPlayLesson,
   MdEdit,
@@ -28,14 +29,24 @@ const formatDayOfWeek = (day: string | undefined) => {
 };
 
 export default function LecturerCoursesPage() {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   // Fetch courses từ API
   const { data: coursesResponse, isLoading, error } = useQuery({
-    queryKey: ['lecturer-courses'],
-    queryFn: () => courseApi.getLecturerCourses(),
+    queryKey: ['lecturer-courses', debouncedSearchTerm],
+    queryFn: async () => {
+      const response = await courseApi.getLecturerCourses({
+        search: debouncedSearchTerm || undefined,
+      });
+      return (response as any)?.data ?? response;
+    },
+    placeholderData: (previousData) => previousData,
   });
 
   // Backend trả về: { data: [...], meta: {...} }
-  const rawData = coursesResponse?.data;
+  const rawData = (coursesResponse as any)?.data ?? coursesResponse;
+
 
   const courses = useMemo<Course[]>(() => {
     if (Array.isArray(rawData)) {
@@ -52,7 +63,6 @@ export default function LecturerCoursesPage() {
     return [];
   }, [rawData]);
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [semesterFilter, setSemesterFilter] = useState<string>('ALL');
   const [dayFilter, setDayFilter] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest');
@@ -141,6 +151,8 @@ export default function LecturerCoursesPage() {
   }, [courses]);
 
   const filteredCourses = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+
     const normalized = courses.map((course) => ({
       ...course,
       courseName: course.courseName?.trim() ?? '',
@@ -149,14 +161,13 @@ export default function LecturerCoursesPage() {
       resolvedSchedules: scheduleMap[course.id] ?? course.schedules ?? [],
     }));
 
-    const keyword = searchTerm.trim().toLowerCase();
-
-    let results = normalized.filter((course) => {
-      if (!keyword) return true;
-      return [course.courseName, course.courseCode, course.description]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(keyword));
-    });
+    let results = keyword
+      ? normalized.filter((course) =>
+          [course.courseName, course.courseCode, course.description]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(keyword))
+        )
+      : normalized;
 
     if (semesterFilter !== 'ALL') {
       results = results.filter((course) =>
@@ -188,7 +199,7 @@ export default function LecturerCoursesPage() {
     });
 
     return results;
-  }, [courses, scheduleMap, searchTerm, semesterFilter, dayFilter, sortBy]);
+  }, [courses, scheduleMap, semesterFilter, dayFilter, sortBy]);
 
 
   const formatDate = (date?: string) => {
@@ -476,7 +487,7 @@ export default function LecturerCoursesPage() {
                     </div>
                     <div className="flex gap-2 pr-1">
                       <button
-                        onClick={() => alert('Chức năng chỉnh sửa đang được phát triển')}
+                        onClick={() => navigate(`/lecturer/courses/${course.id}/edit`)}
                         className="flex-1 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/40 sm:flex-none dark:bg-white dark:text-black dark:hover:bg-white/90"
                       >
                         <span className="inline-flex items-center gap-2">

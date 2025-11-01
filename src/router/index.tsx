@@ -72,6 +72,7 @@ const router = createBrowserRouter([
       { path: '', element: <div>Lecturer Dashboard (Coming soon)</div> },
       { path: 'courses', element: <LecturerCoursesPage /> },
       { path: 'courses/create', element: <CreateCoursePage /> },
+      { path: 'courses/:courseId/edit', element: <CreateCoursePage /> },
       { path: 'students', element: <div>Quản lý học viên</div> },
       { path: 'analytics', element: <div>Thống kê</div> },
     ],

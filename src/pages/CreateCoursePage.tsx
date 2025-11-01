@@ -1,11 +1,12 @@
-import { forwardRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { forwardRef, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, useFieldArray, type FieldError } from 'react-hook-form';
-import { useMutation } from '@tanstack/react-query';
-import { courseApi, type CreateCourseData, type CreateScheduleData } from './api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { courseApi, type Course, type CourseSchedule, type CreateCourseData, type CreateScheduleData } from './api';
 import { useAuthStore } from '../stores/authStore';
 
 type ScheduleFormData = {
+  id?: string;
   semester: string;
   academicYear: string;
   dayOfWeek: string;
@@ -27,7 +28,18 @@ type CourseFormData = {
 };
 
 export default function CreateCoursePage() {
-  const { control, register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CourseFormData>({
+  const { courseId } = useParams<{ courseId?: string }>();
+  const isEditMode = Boolean(courseId);
+
+  const {
+    control,
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    getValues,
+    setValue,
+  } = useForm<CourseFormData>({
     defaultValues: {
       credits: 3,
       maxStudents: 50,
@@ -37,6 +49,8 @@ export default function CreateCoursePage() {
 
   const navigate = useNavigate();
   const user = useAuthStore(state => state.user);
+  const queryClient = useQueryClient();
+  const [isSavingSchedules, setIsSavingSchedules] = useState(false);
 
   const {
     fields: scheduleFields,
@@ -45,6 +59,33 @@ export default function CreateCoursePage() {
   } = useFieldArray({
     control,
     name: 'schedules',
+  });
+
+  const { data: courseDetail, isLoading: isCourseLoading } = useQuery({
+    queryKey: ['course-detail', courseId],
+    queryFn: async () => {
+      if (!courseId) return null;
+      const response = await courseApi.getCourseById(courseId);
+      return (response as any)?.data ?? response;
+    },
+    enabled: isEditMode,
+  });
+
+  const { data: scheduleDetail, isLoading: isScheduleLoading } = useQuery({
+    queryKey: ['course-schedules', courseId],
+    queryFn: async () => {
+      if (!courseId) return [] as CourseSchedule[];
+      const response = await courseApi.getCourseSchedules(courseId);
+      const payload = (response as any)?.data ?? response;
+      return Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.schedules)
+        ? payload.schedules
+        : Array.isArray(payload)
+        ? payload
+        : [];
+    },
+    enabled: isEditMode,
   });
 
   const dayOfWeekOptions = [
@@ -56,6 +97,47 @@ export default function CreateCoursePage() {
     'SATURDAY',
     'SUNDAY',
   ];
+
+const calculateWeeksBetween = (startDate: string, endDate: string) => {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return 0;
+  }
+  const diffMs = end.getTime() - start.getTime();
+  const diffWeeks = Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7));
+  return diffWeeks > 0 ? diffWeeks : 0;
+};
+
+useEffect(() => {
+  if (!isEditMode || !courseDetail) {
+    return;
+  }
+
+  const detail = courseDetail as Course;
+  const scheduleItems = (scheduleDetail ?? []).map((schedule: CourseSchedule) => ({
+    id: schedule.id,
+    semester: schedule.semester ?? '',
+    academicYear: schedule.academicYear ?? '',
+    dayOfWeek: schedule.dayOfWeek ?? 'MONDAY',
+    startTime: schedule.startTime ?? '',
+    endTime: schedule.endTime ?? '',
+    room: schedule.room ?? '',
+    startDate: schedule.startDate ? schedule.startDate.slice(0, 10) : '',
+    endDate: schedule.endDate ? schedule.endDate.slice(0, 10) : '',
+    totalWeeks: schedule.totalWeeks ?? 0,
+  }));
+
+  reset({
+    courseCode: detail.courseCode ?? '',
+    courseName: detail.courseName ?? '',
+    description: detail.description ?? '',
+    credits: detail.credits ?? 0,
+    maxStudents: detail.maxStudents ?? 0,
+    schedules: scheduleItems,
+  });
+}, [isEditMode, courseDetail, scheduleDetail, reset]);
 
   const handleAddSchedule = () => {
     appendSchedule({
@@ -71,95 +153,176 @@ export default function CreateCoursePage() {
     });
   };
 
+const handleRemoveSchedule = (index: number) => {
+  removeSchedule(index);
+};
+
   // Mutation để tạo course với API backend
   const createCourseMutation = useMutation({
     mutationFn: (data: CreateCourseData) => courseApi.createCourse(data),
   });
 
-  const isProcessing = createCourseMutation.isPending || isSubmitting;
+const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingSchedules;
 
   const onSubmit = async (data: CourseFormData) => {
-    if (!user?.lecturerId) {
-      alert('Không tìm thấy thông tin Lecturer ID. Vui lòng đăng nhập lại!');
-      console.error('User object:', user);
-      return;
-    }
+  const sanitizedSchedules = (data.schedules ?? [])
+    .map((schedule) => ({
+      ...schedule,
+      totalWeeks: Number(schedule.totalWeeks || 0),
+    }))
+    .filter((schedule) =>
+      schedule.semester &&
+      schedule.academicYear &&
+      schedule.dayOfWeek &&
+      schedule.startTime &&
+      schedule.endTime &&
+      schedule.room &&
+      schedule.startDate &&
+      schedule.endDate &&
+      schedule.totalWeeks > 0
+    );
 
+  if (isEditMode && courseId) {
+    setIsSavingSchedules(true);
     try {
-      const courseData: CreateCourseData = {
+      await courseApi.updateCourse(courseId, {
         courseCode: data.courseCode,
         courseName: data.courseName,
         description: data.description,
         credits: Number(data.credits),
         maxStudents: Number(data.maxStudents),
-        lecturerId: user.lecturerId, // Sử dụng lecturerId từ bảng LECTURER
-      };
+      });
 
-      const response = await createCourseMutation.mutateAsync(courseData);
-      const responseData = (response as any)?.data ?? response;
-      const normalizedCourse = responseData?.data ?? responseData;
-      const courseId =
-        normalizedCourse?.id ??
-        normalizedCourse?.courseId ??
-        normalizedCourse?.course?.id ??
-        normalizedCourse?.data?.id;
+      const schedulesToCreate = sanitizedSchedules.filter((schedule) => !schedule.id);
+      const schedulesToUpdate = sanitizedSchedules.filter((schedule) => schedule.id);
 
-      const sanitizedSchedules = (data.schedules ?? [])
-        .map((schedule) => ({
-          ...schedule,
-          totalWeeks: Number(schedule.totalWeeks || 0),
-        }))
-        .filter((schedule) =>
-          schedule.semester &&
-          schedule.academicYear &&
-          schedule.dayOfWeek &&
-          schedule.startTime &&
-          schedule.endTime &&
-          schedule.room &&
-          schedule.startDate &&
-          schedule.endDate &&
-          schedule.totalWeeks > 0
-        );
+      const createPayloads = schedulesToCreate.map(({ id: _id, totalWeeks, ...schedule }) => ({
+        courseId,
+        semester: schedule.semester,
+        academicYear: schedule.academicYear,
+        dayOfWeek: schedule.dayOfWeek,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        room: schedule.room,
+        startDate: new Date(schedule.startDate).toISOString(),
+        endDate: new Date(schedule.endDate).toISOString(),
+        totalWeeks,
+      }));
 
-      if (!courseId) {
-        alert('Tạo khóa học thành công nhưng không lấy được mã khóa học. Vui lòng kiểm tra lại.');
-        navigate('/lecturer/courses');
-        return;
-      }
+      const updatePayloads = schedulesToUpdate.map((schedule) => ({
+        id: schedule.id as string,
+        payload: {
+          courseId,
+          semester: schedule.semester,
+          academicYear: schedule.academicYear,
+          dayOfWeek: schedule.dayOfWeek,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          room: schedule.room,
+          startDate: new Date(schedule.startDate).toISOString(),
+          endDate: new Date(schedule.endDate).toISOString(),
+          totalWeeks: schedule.totalWeeks,
+        },
+      }));
 
-      if (sanitizedSchedules.length > 0) {
-        try {
-          const schedulePayloads: CreateScheduleData[] = sanitizedSchedules.map((schedule) => ({
-            courseId,
-            semester: schedule.semester,
-            academicYear: schedule.academicYear,
-            dayOfWeek: schedule.dayOfWeek,
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
-            room: schedule.room,
-            startDate: new Date(schedule.startDate).toISOString(),
-            endDate: new Date(schedule.endDate).toISOString(),
-            totalWeeks: schedule.totalWeeks,
-          }));
-
-          await Promise.all(schedulePayloads.map((payload) => courseApi.createSchedule(payload)));
-          alert('Tạo khóa học và lịch học thành công!');
-        } catch (scheduleError) {
-          console.error('Create schedule error:', scheduleError);
-          const scheduleMessage = (scheduleError as any)?.response?.data?.message || 'Tạo khóa học thành công nhưng lưu lịch học thất bại. Vui lòng thử lại trong phần chỉnh sửa.';
-          alert(scheduleMessage);
-        }
-      } else {
-        alert('Tạo khóa học thành công!');
-      }
-
+      await Promise.all([
+        ...createPayloads.map((payload) => courseApi.createSchedule(payload)),
+        ...updatePayloads.map(({ id, payload }) => courseApi.updateSchedule(id, payload)),
+      ]);
+      alert('Cập nhật khóa học thành công!');
+      queryClient.invalidateQueries({ queryKey: ['lecturer-courses'] });
       navigate('/lecturer/courses');
     } catch (err) {
-      console.error('Submit error:', err);
-      const errorMessage = (err as any)?.response?.data?.message || 'Có lỗi xảy ra khi tạo khóa học hoặc lịch học!';
+      console.error('Edit course error:', err);
+      const errorMessage = (err as any)?.response?.data?.message || 'Có lỗi xảy ra khi cập nhật khóa học hoặc lịch học!';
       alert(errorMessage);
+    } finally {
+      setIsSavingSchedules(false);
     }
+    return;
+  }
+
+  if (!user?.lecturerId) {
+    alert('Không tìm thấy thông tin Lecturer ID. Vui lòng đăng nhập lại!');
+    console.error('User object:', user);
+    return;
+  }
+
+  try {
+    const courseData: CreateCourseData = {
+      courseCode: data.courseCode,
+      courseName: data.courseName,
+      description: data.description,
+      credits: Number(data.credits),
+      maxStudents: Number(data.maxStudents),
+      lecturerId: user.lecturerId, // Sử dụng lecturerId từ bảng LECTURER
+    };
+
+    const response = await createCourseMutation.mutateAsync(courseData);
+    const responseData = (response as any)?.data ?? response;
+    const normalizedCourse = responseData?.data ?? responseData;
+    const createdCourseId =
+      normalizedCourse?.id ??
+      normalizedCourse?.courseId ??
+      normalizedCourse?.course?.id ??
+      normalizedCourse?.data?.id;
+
+    if (!createdCourseId) {
+      alert('Tạo khóa học thành công nhưng không lấy được mã khóa học. Vui lòng kiểm tra lại.');
+      navigate('/lecturer/courses');
+      return;
+    }
+
+    if (sanitizedSchedules.length > 0) {
+      try {
+        const schedulePayloads: CreateScheduleData[] = sanitizedSchedules.map(({ totalWeeks, ...schedule }) => ({
+          courseId: createdCourseId,
+          semester: schedule.semester,
+          academicYear: schedule.academicYear,
+          dayOfWeek: schedule.dayOfWeek,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          room: schedule.room,
+          startDate: new Date(schedule.startDate).toISOString(),
+          endDate: new Date(schedule.endDate).toISOString(),
+          totalWeeks,
+        }));
+
+        await Promise.all(schedulePayloads.map((payload) => courseApi.createSchedule(payload)));
+        alert('Tạo khóa học và lịch học thành công!');
+      } catch (scheduleError) {
+        console.error('Create schedule error:', scheduleError);
+        const scheduleMessage = (scheduleError as any)?.response?.data?.message || 'Tạo khóa học thành công nhưng lưu lịch học thất bại. Vui lòng thử lại trong phần chỉnh sửa.';
+        alert(scheduleMessage);
+      }
+    } else {
+      alert('Tạo khóa học thành công!');
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['lecturer-courses'] });
+    navigate('/lecturer/courses');
+  } catch (err) {
+    console.error('Submit error:', err);
+    const errorMessage = (err as any)?.response?.data?.message || 'Có lỗi xảy ra khi tạo khóa học hoặc lịch học!';
+    alert(errorMessage);
+  }
   };
+
+if (isEditMode && (isCourseLoading || isScheduleLoading)) {
+  return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+    </div>
+  );
+}
+
+if (isEditMode && !courseDetail) {
+  return (
+    <div className="max-w-xl mx-auto bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-6 rounded-xl">
+      Không tìm thấy khóa học hoặc bạn không có quyền chỉnh sửa.
+    </div>
+  );
+}
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -311,8 +474,9 @@ export default function CreateCoursePage() {
                       <h3 className="text-lg font-semibold text-main dark:text-white">Lịch học #{index + 1}</h3>
                       <button
                         type="button"
-                        onClick={() => removeSchedule(index)}
-                        disabled={isProcessing}
+                        onClick={() => handleRemoveSchedule(index)}
+                        disabled={isProcessing || !!field.id}
+                        title={!!field.id ? "Chỉ Admin mới có quyền xóa lịch đã lưu" : "Xóa lịch học"}
                         className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-red-500/20"
                       >
                         Xóa lịch này
@@ -428,6 +592,12 @@ export default function CreateCoursePage() {
                           })}
                           disabled={isProcessing}
                           className="w-full rounded-lg border border-color px-4 py-2.5 text-sm text-main bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                          onChange={(event) => {
+                            register(`schedules.${index}.startDate`).onChange(event);
+                            const current = getValues(`schedules.${index}`);
+                            const weeks = calculateWeeksBetween(event.target.value, current?.endDate ?? '');
+                            setValue(`schedules.${index}.totalWeeks`, weeks, { shouldValidate: true });
+                          }}
                         />
                         {errors.schedules?.[index]?.startDate && (
                           <p className="mt-1 text-xs text-red-500">{errors.schedules?.[index]?.startDate?.message}</p>
@@ -443,6 +613,12 @@ export default function CreateCoursePage() {
                           })}
                           disabled={isProcessing}
                           className="w-full rounded-lg border border-color px-4 py-2.5 text-sm text-main bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                          onChange={(event) => {
+                            register(`schedules.${index}.endDate`).onChange(event);
+                            const current = getValues(`schedules.${index}`);
+                            const weeks = calculateWeeksBetween(current?.startDate ?? '', event.target.value);
+                            setValue(`schedules.${index}.totalWeeks`, weeks, { shouldValidate: true });
+                          }}
                         />
                         {errors.schedules?.[index]?.endDate && (
                           <p className="mt-1 text-xs text-red-500">{errors.schedules?.[index]?.endDate?.message}</p>
@@ -453,15 +629,14 @@ export default function CreateCoursePage() {
                         <label className="block text-sm font-medium text-main mb-2 dark:text-white">Tổng số tuần</label>
                         <input
                           type="number"
-                          min={1}
-                          max={52}
+                          readOnly
                           {...register(`schedules.${index}.totalWeeks`, {
                             required: 'Tổng số tuần là bắt buộc',
                             min: { value: 1, message: 'Tối thiểu 1 tuần' },
                             max: { value: 52, message: 'Tối đa 52 tuần' },
                           })}
                           disabled={isProcessing}
-                          className="w-full rounded-lg border border-color px-4 py-2.5 text-sm text-main focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                          className="w-full rounded-lg border border-color px-4 py-2.5 text-sm text-main focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 bg-gray-100 dark:border-slate-600 dark:bg-slate-900 dark:text-white cursor-not-allowed"
                         />
                         {errors.schedules?.[index]?.totalWeeks && (
                           <p className="mt-1 text-xs text-red-500">{errors.schedules?.[index]?.totalWeeks?.message}</p>
