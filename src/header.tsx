@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuthStore } from './stores/authStore';
 import { useNavigate } from 'react-router-dom';
+import { useLogout } from "./hooks/useAuthQuery";
+import { useAuthStore } from './stores/authStore';
 
 interface HeaderProps {
   currentPage: string;
@@ -9,10 +10,9 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPage, onMenuClick }: HeaderProps) {
-  const user = useAuthStore(state => state.user);
-  const logout = useAuthStore(state => state.logout);
-
   const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
+  const logoutMutation = useLogout();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -21,7 +21,8 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
 
   const handleLogout = async () => {
     try {
-      logout(); // 👈 gọi logout từ store
+      setShowUserMenu(false);
+      await logoutMutation.mutateAsync();
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
@@ -239,7 +240,9 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
                       setShowUserMenu(false);
                       handleLogout();
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150 flex items-center gap-3 group"
+                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150 flex items-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={logoutMutation.isLoading}
+                    aria-busy={logoutMutation.isLoading}
                   >
                     <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" className="text-red-600 dark:text-red-400" role="img" aria-labelledby="svg-logout-title">

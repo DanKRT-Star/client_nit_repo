@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLogin } from '../hooks/useAuthQuery';
 import { toast } from 'react-hot-toast';
+import { useEffect } from 'react';
 
 type LoginFormData = {
   email: string;
@@ -19,23 +20,65 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Lấy redirect path (nếu user bị redirect từ protected route)
   const from = (location.state as any)?.from?.pathname || '/';
 
+  // 🔍 DEBUG: Kiểm tra token khi component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    console.log('🔍 LOGIN PAGE - Initial check:');
+    console.log('Token:', token ? `${token.substring(0, 20)}...` : 'NULL');
+    console.log('User:', user);
+    
+    // Nếu đã có token, redirect về trang chủ
+    if (token) {
+      console.log('✅ Already logged in, redirecting to:', from);
+      navigate(from, { replace: true });
+    }
+  }, []);
+
   const onSubmit = async (data: LoginFormData) => {
+    console.log('📝 Submitting login form:', { email: data.email });
+    
     try {
-      await loginMutation.mutateAsync({
+      const user = await loginMutation.mutateAsync({
         email: data.email,
         password: data.password,
       });
 
+      console.log('✅ Login successful!');
+      console.log('User:', user);
+      
+      // 🔍 DEBUG: Kiểm tra token sau khi login
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      
+      console.log('💾 Saved to localStorage:');
+      console.log('Token:', savedToken ? `${savedToken.substring(0, 20)}...` : 'NULL');
+      console.log('User:', savedUser);
+
+      if (!savedToken) {
+        console.error('❌ ERROR: Token not saved to localStorage!');
+        toast.error('Lỗi lưu token, vui lòng thử lại');
+        return;
+      }
+
       toast.success('Đăng nhập thành công!');
-      navigate(from, { replace: true });
+      
+      // Delay nhỏ để đảm bảo token đã được lưu
+      setTimeout(() => {
+        console.log('🔄 Redirecting to:', from);
+        navigate(from, { replace: true });
+      }, 100);
+
     } catch (error: any) {
+      console.error('❌ Login error:', error);
+      console.error('Response:', error?.response?.data);
+      
       const errorMessage =
         error?.response?.data?.message || 'Đăng nhập thất bại';
       toast.error(errorMessage);
-      console.error('Login error:', error);
     }
   };
 

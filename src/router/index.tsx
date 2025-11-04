@@ -10,6 +10,7 @@ import RoleRedirect from '../components/RoleRedirect';
 
 // Import các pages
 import CoursePage from '../pages/coursePage';
+import CourseDetail from '../pages/CourseDetail';
 import CalendarPage from '../pages/calendarPage';
 import AssignmentPage from '../pages/assignmentPage';
 import BlogPage from '../pages/blogPage';
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
     children: [
       { path: '', element: <Navigate to="/student/courses" replace /> },
       { path: 'courses', element: <CoursePage /> },
+      { path: 'courses/:id', element: <CourseDetail /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'assignment', element: <AssignmentPage /> },
       { path: 'blog', element: <BlogPage /> },

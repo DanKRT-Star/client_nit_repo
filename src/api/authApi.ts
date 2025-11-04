@@ -1,13 +1,21 @@
 import { authApi, type StudentRegisterData, type LecturerRegisterData } from './api';
 import { type User, normalizeRole } from '../util/authUtils';
 
-
-
-
 // === LOGIN ===
 export const loginService = async (email: string, password: string) => {
   const res = await authApi.login(email, password);
-  const { user, token } = res.data;
+  
+  // API trả về accessToken thay vì token
+  const { user, accessToken, token } = res.data;
+  const authToken = accessToken || token;
+  
+  if (!authToken) {
+    throw new Error('Token not found in response');
+  }
+  
+  if (!user) {
+    throw new Error('User not found in response');
+  }
 
   const normalized: User = {
     id: String(user.id),
@@ -20,7 +28,7 @@ export const loginService = async (email: string, password: string) => {
     updatedAt: user.updatedAt
   };
 
-  localStorage.setItem('token', token);
+  localStorage.setItem('token', authToken);
   localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
 
   return normalized;
@@ -28,10 +36,19 @@ export const loginService = async (email: string, password: string) => {
 
 // === LOGOUT ===
 export const logoutService = async () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  // Nếu có API logout thì gọi ở đây
-  // await authApi.logout();
+  // Try calling server logout if available, but don't fail if the endpoint doesn't exist
+  try {
+    if (authApi.logout) {
+      await authApi.logout();
+    }
+  } catch (err) {
+    // Log and continue — even if server logout fails, we'll clear local state
+    console.warn('Logout API call failed:', err);
+  } finally {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+
 };
 
 // === GET CURRENT USER ===
@@ -65,7 +82,13 @@ export const registerService = async (
     res = await authApi.registerLecturer(data as LecturerRegisterData);
   }
 
-  const { user, token } = res.data;
+  // API trả về accessToken thay vì token
+  const { user, accessToken, token } = res.data;
+  const authToken = accessToken || token;
+  
+  if (!authToken || !user) {
+    throw new Error('Invalid register response');
+  }
 
   const normalized: User = {
     id: String(user.id),
@@ -78,7 +101,7 @@ export const registerService = async (
     updatedAt: user.updatedAt
   };
 
-  localStorage.setItem('token', token);
+  localStorage.setItem('token', authToken);
   localStorage.setItem('user', JSON.stringify({ id: normalized.id, role: normalized.role }));
 
   return normalized;

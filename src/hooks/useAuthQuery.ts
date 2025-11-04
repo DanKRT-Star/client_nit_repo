@@ -49,15 +49,20 @@ export const useLogout = () => {
   const clearUser = useAuthStore((s) => s.clearUser);
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async () => {
       await logoutService();
     },
     onSuccess: () => {
-      clearUser(); 
+      clearUser();
       queryClient.clear();
     },
   });
+
+  return {
+    ...mutation,
+    isLoading: mutation.isPending,
+  };
 };
 
 // === REGISTER ===
