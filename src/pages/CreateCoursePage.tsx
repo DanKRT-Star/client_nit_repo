@@ -17,6 +17,7 @@ type ScheduleFormData = {
   startDate: string;
   endDate: string;
   totalWeeks: number;
+  __persisted?: boolean;
 };
 
 type CourseFormData = {
@@ -33,6 +34,8 @@ export default function CreateCoursePage() {
   const isEditMode = Boolean(courseId);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [enforceCrop169, setEnforceCrop169] = useState<boolean>(true);
+  const [cropPosition, setCropPosition] = useState<'center' | 'top' | 'bottom' | 'left' | 'right'>('center');
   const {
     control,
     register,
@@ -124,6 +127,84 @@ export default function CreateCoursePage() {
   };
 
 
+  // Cắt ảnh về 16:9 trước khi upload, dựa trên vị trí người dùng chọn
+  const cropImageToAspect = async (
+    file: File,
+    aspect: number,
+    position: 'center' | 'top' | 'bottom' | 'left' | 'right',
+    targetWidth = 1280
+  ): Promise<File> => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = dataUrl;
+    });
+
+    const srcW = img.width;
+    const srcH = img.height;
+    const srcAspect = srcW / srcH;
+
+    let cropW: number;
+    let cropH: number;
+    if (srcAspect > aspect) {
+      // nguồn quá rộng, cắt theo chiều ngang
+      cropH = srcH;
+      cropW = Math.round(cropH * aspect);
+    } else {
+      // nguồn quá cao, cắt theo chiều dọc
+      cropW = srcW;
+      cropH = Math.round(cropW / aspect);
+    }
+
+    let sx = 0;
+    let sy = 0;
+    // Tính offset dựa vào position
+    switch (position) {
+      case 'center':
+        sx = Math.max(0, Math.round((srcW - cropW) / 2));
+        sy = Math.max(0, Math.round((srcH - cropH) / 2));
+        break;
+      case 'top':
+        sx = Math.max(0, Math.round((srcW - cropW) / 2));
+        sy = 0;
+        break;
+      case 'bottom':
+        sx = Math.max(0, Math.round((srcW - cropW) / 2));
+        sy = Math.max(0, srcH - cropH);
+        break;
+      case 'left':
+        sx = 0;
+        sy = Math.max(0, Math.round((srcH - cropH) / 2));
+        break;
+      case 'right':
+        sx = Math.max(0, srcW - cropW);
+        sy = Math.max(0, Math.round((srcH - cropH) / 2));
+        break;
+    }
+
+    const outW = targetWidth;
+    const outH = Math.round(outW / aspect);
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, outW, outH);
+
+    const blob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b as Blob), 'image/jpeg', 0.92));
+    return new File([blob], file.name.replace(/\.(png|webp|jpeg|jpg)$/i, '') + '-16x9.jpg', { type: 'image/jpeg' });
+  };
+
+
 const calculateWeeksBetween = (startDate: string, endDate: string) => {
   if (!startDate || !endDate) return 0;
   const start = new Date(startDate);
@@ -153,6 +234,7 @@ useEffect(() => {
     startDate: schedule.startDate ? schedule.startDate.slice(0, 10) : '',
     endDate: schedule.endDate ? schedule.endDate.slice(0, 10) : '',
     totalWeeks: schedule.totalWeeks ?? 0,
+    __persisted: true,
   }));
 
   reset({
@@ -216,20 +298,13 @@ const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingS
   if (isEditMode && courseId) {
     setIsSavingSchedules(true);
     try {
-      // PATCH không hỗ trợ upload file, chỉ JSON
-      if (thumbnailFile) {
-        alert('⚠️ Chỉnh sửa course không hỗ trợ upload file trực tiếp. Vui lòng upload ảnh lên dịch vụ lưu trữ và nhập URL.');
-        setIsSavingSchedules(false);
-        return;
-      }
-      
       await courseApi.updateCourse(courseId, {
         courseCode: data.courseCode,
         courseName: data.courseName,
         description: data.description,
         credits: Number(data.credits),
         maxStudents: Number(data.maxStudents),
-      });
+      }, thumbnailFile || undefined);
 
       const schedulesToCreate = sanitizedSchedules.filter((schedule) => !schedule.id);
       const schedulesToUpdate = sanitizedSchedules.filter((schedule) => schedule.id);
@@ -287,6 +362,10 @@ const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingS
   }
 
   try {
+    // Nếu có ảnh và đang bật cắt 16:9, xử lý ảnh trước khi gửi
+    const processedFile = thumbnailFile && enforceCrop169
+      ? await cropImageToAspect(thumbnailFile, 16 / 9, cropPosition)
+      : thumbnailFile || undefined;
     const courseData: CreateCourseData = {
       courseCode: data.courseCode,
       courseName: data.courseName,
@@ -296,7 +375,7 @@ const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingS
       lecturerId: user.lecturerId, // Sử dụng lecturerId từ bảng LECTURER
     };
 
-    const response = await createCourseMutation.mutateAsync({ data: courseData, file: thumbnailFile || undefined });
+    const response = await createCourseMutation.mutateAsync({ data: courseData, file: processedFile || undefined });
     const responseData = (response as any)?.data ?? response;
     const normalizedCourse = responseData?.data ?? responseData;
     const createdCourseId =
@@ -341,6 +420,8 @@ const isProcessing = createCourseMutation.isPending || isSubmitting || isSavingS
     navigate('/lecturer/courses');
   } catch (err) {
     console.error('Submit error:', err);
+    console.error('Full error response:', (err as any)?.response);
+    console.error('Error response data:', (err as any)?.response?.data);
     const errorMessage = (err as any)?.response?.data?.message || 'Có lỗi xảy ra khi tạo khóa học hoặc lịch học!';
     alert(errorMessage);
   }
@@ -366,8 +447,8 @@ if (isEditMode && !courseDetail) {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-main mb-2">Tạo khóa học mới</h1>
-        <p className="text-secondary">Điền thông tin để tạo một khóa học mới cho học viên</p>
+        <h1 className="text-3xl font-bold text-main mb-2">{isEditMode ? 'Cập nhật khóa học' : 'Tạo khóa học mới'}</h1>
+        <p className="text-secondary">{isEditMode ? 'Chỉnh sửa thông tin và cập nhật khóa học hiện có' : 'Điền thông tin để tạo một khóa học mới cho học viên'}</p>
       </div>
 
       {/* Form Card */}
@@ -449,12 +530,20 @@ if (isEditMode && !courseDetail) {
               {/* Preview ảnh nếu có */}
               {thumbnailPreview && (
                 <div className="mb-3 relative w-full">
-                  <div className="relative h-48 w-full rounded-lg overflow-hidden border-2 border-primary/20">
-                    <img 
-                      src={thumbnailPreview} 
-                      alt="Preview thumbnail" 
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="relative w-full rounded-lg overflow-hidden border-2 border-primary/20">
+                    <div className="w-full aspect-[16/9] bg-black/5">
+                      <img
+                        src={thumbnailPreview}
+                        alt="Preview thumbnail"
+                        className={`w-full h-full object-cover ${
+                          cropPosition === 'top' ? 'object-[50%_0%]' :
+                          cropPosition === 'bottom' ? 'object-[50%_100%]' :
+                          cropPosition === 'left' ? 'object-[0%_50%]' :
+                          cropPosition === 'right' ? 'object-[100%_50%]' :
+                          'object-center'
+                        }`}
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
@@ -466,6 +555,32 @@ if (isEditMode && !courseDetail) {
                     >
                       ✕
                     </button>
+                  </div>
+
+                  {/* Điều khiển cắt ảnh 16:9 */}
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={enforceCrop169}
+                        onChange={(e) => setEnforceCrop169(e.target.checked)}
+                      />
+                      <span>Cắt về tỉ lệ 16:9 khi lưu</span>
+                    </label>
+                    <div className="sm:col-span-2 flex items-center gap-2">
+                      <span className="text-sm text-secondary">Vị trí trọng tâm:</span>
+                      <select
+                        value={cropPosition}
+                        onChange={(e) => setCropPosition(e.target.value as any)}
+                        className="rounded-md border border-color bg-white px-3 py-1.5 text-sm text-main dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                      >
+                        <option value="center">Giữa</option>
+                        <option value="top">Trên</option>
+                        <option value="bottom">Dưới</option>
+                        <option value="left">Trái</option>
+                        <option value="right">Phải</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -543,15 +658,17 @@ if (isEditMode && !courseDetail) {
                 </h2>
                 <p className="text-sm text-secondary dark:text-gray-300">Thêm các buổi học theo học kỳ, thời gian và phòng học cụ thể.</p>
               </div>
-              <button
-                type="button"
-                onClick={handleAddSchedule}
-                disabled={isProcessing}
-                className="inline-flex items-center gap-2 rounded-lg border border-primary/50 px-4 py-2 text-sm font-semibold text-main transition-all hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-primary/60 dark:text-white dark:hover:bg-primary/20"
-              >
-                <span className="text-lg">+</span>
-                Thêm lịch học
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddSchedule}
+                  disabled={isProcessing}
+                  className="inline-flex items-center gap-2 rounded-lg border border-primary/50 px-4 py-2 text-sm font-semibold text-main transition-all hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-primary/60 dark:text-white dark:hover:bg-primary/20"
+                >
+                  <span className="text-lg">+</span>
+                  Thêm lịch học
+                </button>
+              </div>
             </div>
 
             {scheduleFields.length === 0 ? (
@@ -567,15 +684,21 @@ if (isEditMode && !courseDetail) {
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <h3 className="text-lg font-semibold text-main dark:text-white">Lịch học #{index + 1}</h3>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSchedule(index)}
-                        disabled={isProcessing || !!field.id}
-                        title={!!field.id ? "Chỉ Admin mới có quyền xóa lịch đã lưu" : "Xóa lịch học"}
-                        className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-red-500/20"
-                      >
-                        Xóa lịch này
-                      </button>
+                      {(field as any).__persisted ? (
+                        <span className="rounded-lg border border-dashed border-color px-3 py-1.5 text-xs font-medium text-secondary dark:border-slate-600 dark:text-gray-300">
+                          Chỉ Admin mới có quyền xóa lịch đã lưu
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSchedule(index)}
+                          disabled={isProcessing}
+                          title="Xóa lịch học"
+                          className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-red-500/20"
+                        >
+                          Xóa lịch
+                        </button>
+                      )}
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -760,7 +883,7 @@ if (isEditMode && !courseDetail) {
               className="flex-1 bg-primary text-white font-semibold py-3 px-4 rounded-lg hover:shadow-xl hover:shadow-primary/30 hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg relative overflow-hidden group dark:bg-white dark:text-black dark:hover:bg-white/90 dark:hover:shadow-primary/20"
             >
               <span className="relative z-10">
-                {createCourseMutation.isPending || isSubmitting ? 'Đang tạo...' : 'Tạo khóa học'}
+                {createCourseMutation.isPending || isSubmitting ? (isEditMode ? 'Đang cập nhật...' : 'Đang tạo...') : (isEditMode ? 'Cập nhật khóa học' : 'Tạo khóa học')}
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 dark:via-black/10"></div>
             </button>

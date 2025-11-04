@@ -149,6 +149,8 @@ export default function LecturerCoursesPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest');
   const [scheduleMap, setScheduleMap] = useState<Record<string, CourseSchedule[]>>({});
   const fetchedScheduleIds = useRef<Set<string>>(new Set());
+  const [hoverCourseId, setHoverCourseId] = useState<string | null>(null);
+  const [hoverSide, setHoverSide] = useState<'right' | 'left'>('right');
 
   useEffect(() => {
     setScheduleMap({});
@@ -490,20 +492,27 @@ export default function LecturerCoursesPage() {
           {filteredCourses.map((course) => {
             const mappedSchedules = scheduleMap[course.id];
             const schedules = mappedSchedules ?? course.schedules ?? [];
-            const isLoadingSchedules = fetchedScheduleIds.current.has(course.id) && mappedSchedules === undefined;
             const primarySchedule = schedules[0];
 
             return (
               <div
                 key={course.id}
-                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-color/40 bg-surface/80 shadow-xl shadow-primary/10 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-component/80 hover:shadow-2xl hover:shadow-primary/30 dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10"
+                className="group relative z-10 flex h-full flex-col rounded-2xl border border-color/40 bg-surface/80 shadow-xl shadow-primary/10 transition-all duration-300 hover:-translate-y-1 hover:z-50 hover:border-primary/40 hover:bg-component/80 hover:shadow-2xl hover:shadow-primary/30 dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10"
+                onMouseEnter={(event) => {
+                  const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+                  const spaceRight = window.innerWidth - rect.right;
+                  const side = spaceRight < 360 ? 'left' : 'right';
+                  setHoverSide(side);
+                  setHoverCourseId(course.id);
+                }}
+                onMouseLeave={() => setHoverCourseId(null)}
               >
                 {course.thumbnailUrl && (
-                  <div className="relative h-48 w-full overflow-hidden">
+                  <div className="relative w-full overflow-hidden aspect-[16/9] rounded-t-2xl">
                     <img
                       src={course.thumbnailUrl}
                       alt={course.courseName}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
@@ -512,114 +521,74 @@ export default function LecturerCoursesPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   </div>
                 )}
-                <div className={`relative overflow-hidden ${course.thumbnailUrl ? 'p-6' : 'bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6 dark:from-primary/20 dark:via-primary/10'}`}>
-                  {!course.thumbnailUrl && (
+                {!course.thumbnailUrl && (
+                  <div className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4 dark:from-primary/20 dark:via-primary/10">
                     <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/15 blur-2xl" />
-                  )}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-3">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-main backdrop-blur dark:bg-primary/20 dark:text-white">
-                        <MdPlayLesson className="h-4 w-4" />
-                        {primarySchedule?.semester || (isLoadingSchedules ? 'Đang tải lịch học...' : 'Lịch chưa cập nhật')}
-                      </span>
-                      <p className="text-sm text-secondary dark:text-gray-200">
-                        {primarySchedule ? (
-                          <>
-                            {formatDayOfWeek(primarySchedule.dayOfWeek)} <br />
-                            {primarySchedule.startTime} - {primarySchedule.endTime} <br />
-                            Phòng {primarySchedule.room}
-                          </>
-                        ) : isLoadingSchedules ? (
-                          'Đang tải lịch học, vui lòng chờ trong giây lát.'
-                        ) : (
-                          'Thêm lịch học để sinh viên nắm rõ thời gian.'
-                        )}
-                      </p>
-                    </div>
-                    {!course.thumbnailUrl && (
+                    <div className="flex items-start justify-end">
                       <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
                         <MdPlayLesson className="h-6 w-6" />
                       </span>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex flex-1 flex-col gap-5 p-6">
-                  <div>
+                <div className="flex flex-1 flex-col gap-4 p-5">
+                  <div className="text-sm text-secondary dark:text-gray-200">
                     <div className="flex flex-col gap-1">
-                      <h3 className="text-xl font-semibold text-main transition-colors duration-300">
+                      <h3 className="text-lg font-semibold text-main transition-colors duration-300">
                         {course.courseName}
                       </h3>
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-secondary dark:text-gray-300">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-secondary dark:text-gray-300">
                         {course.courseCode}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 text-sm text-secondary dark:text-gray-200">
-                    <div className="rounded-xl bg-component/60 p-3 dark:bg-component/40">
-                      <p className="text-xs uppercase tracking-widest">Tín chỉ</p>
-                      <p className="mt-1 text-lg font-semibold text-main dark:text-white">{course.credits ?? 0}</p>
-                    </div>
-                    <div className="rounded-xl bg-component/60 p-3 dark:bg-component/40">
-                      <p className="text-xs uppercase tracking-widest">Số học viên</p>
-                      <p className="mt-1 text-lg font-semibold text-main dark:text-white">{course.maxStudents ?? 0}</p>
-                    </div>
-                    <div className="rounded-xl bg-component/60 p-3 dark:bg-component/40">
-                      <p className="text-xs uppercase tracking-widest">Cập nhật</p>
-                      <p className="mt-1 text-sm font-semibold text-main dark:text-white">{formatDate(course.updatedAt || course.createdAt)}</p>
-                    </div>
-                  </div>
+                  {/* Bỏ khối lịch học để card gọn hơn */}
 
-                  <div className="rounded-xl bg-component/60 p-4 dark:bg-component/40">
-                    <div className="mb-2 border-b border-color/40 pb-2 text-xs font-semibold uppercase tracking-widest text-secondary dark:text-gray-300">
-                      <MdOutlineSchedule className="h-4 w-4 text-primary" />
-                      Lịch học
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {schedules.length > 0 ? (
-                        <>
-                          {schedules.slice(0, 3).map((schedule) => (
-                            <div
-                              key={`${schedule.dayOfWeek}-${schedule.startTime}-${schedule.room}`}
-                              className="rounded-lg bg-component/50 px-3 py-2 text-sm text-secondary dark:bg-component/30 dark:text-gray-200"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-semibold text-main dark:text-white">
-                                  {formatDayOfWeek(schedule.dayOfWeek)}
-                                </span>
-                                <span className="text-main dark:text-gray-100">
-                                  {schedule.startTime} - {schedule.endTime}
-                                </span>
-                                <span className="rounded-full bg-component px-2 py-0.5 text-xs text-secondary dark:bg-component/50 dark:text-gray-200">
-                                  Phòng {schedule.room}
-                                </span>
-                              </div>
-                              <p className="mt-1 text-xs text-secondary/80 dark:text-gray-400">
-                                {formatDate(schedule.startDate)} - {formatDate(schedule.endDate)} • {schedule.semester}
-                              </p>
-                            </div>
-                          ))}
-                          {schedules.length > 3 && (
-                            <p className="text-xs text-secondary/80 dark:text-gray-400">
-                              +{schedules.length - 3} lịch học khác
-                            </p>
-                          )}
-                        </>
-                      ) : isLoadingSchedules ? (
-                        <p className="text-sm text-secondary dark:text-gray-200">Đang tải lịch học...</p>
-                      ) : (
-                        <p className="text-sm text-secondary dark:text-gray-200">Chưa thiết lập lịch học.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-auto flex flex-col gap-3 border-t border-color/40 pt-4 text-sm text-secondary dark:text-gray-200 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mt-auto flex flex-col gap-3 border-t border-color/40 pt-3 text-sm text-secondary dark:text-gray-200 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-2 rounded-full bg-component/70 px-3 py-1 text-xs font-semibold text-secondary dark:bg-component/40 dark:text-gray-200">
                         ID: {course.id.slice(0, 6)}...
                       </span>
-                    </div>
+                 </div>
+
+                 {/* Panel chi tiết khi hover (dạng popover như Udemy) */}
+                 <div
+                   className={`${hoverCourseId === course.id ? 'md:block' : 'md:hidden'} absolute top-0 z-50 w-80 transition-all duration-200`} 
+                   style={{
+                     // position outside card left/right with small gap
+                     left: hoverCourseId === course.id && hoverSide === 'right' ? '100%' : 'auto',
+                     right: hoverCourseId === course.id && hoverSide === 'left' ? '100%' : 'auto',
+                   }}
+                 >
+                   <div className={`${hoverSide === 'right' ? 'ml-4' : 'mr-4'} pointer-events-auto rounded-2xl border border-color/40 bg-surface p-4 shadow-2xl ring-1 ring-black/5 dark:border-white/10 dark:bg-[#0b0b0c]`}>
+                     <h4 className="line-clamp-2 text-sm font-bold text-main dark:text-white">{course.courseName}</h4>
+                     <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-secondary dark:text-gray-300">{course.courseCode}</p>
+                    {primarySchedule?.semester ? (
+                      <h4 className="line-clamp-2 text-sm font-semibold text-main dark:text-white">{primarySchedule.semester}</h4>
+                    ) : (
+                      <p className="text-xs text-secondary dark:text-gray-300">Chưa thiết lập lịch học  </p>
+                    )}
+                     {course.description && (
+                       <p className="mt-3 line-clamp-6 text-xs text-secondary dark:text-gray-300">{course.description}</p>
+                     )}
+                     <div className="mt-4 grid grid-cols-1 gap-2 text-xs text-secondary dark:text-gray-300">
+                       <div className="flex items-center justify-between">
+                         <span>Tín chỉ</span>
+                         <span className="font-semibold text-main dark:text-white">{course.credits ?? '—'}</span>
+                       </div>
+                       <div className="flex items-center justify-between">
+                         <span>Số học viên</span>
+                         <span className="font-semibold text-main dark:text-white">{course.maxStudents ?? '—'}</span>
+                       </div>
+                       <div className="flex items-center justify-between">
+                         <span>Cập nhật</span>
+                         <span className="font-semibold text-main dark:text-white">{formatDate(course.updatedAt || course.createdAt)}</span>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
                     <div className="flex gap-2 pr-1">
                       <button
                         onClick={() => navigate(`/lecturer/courses/${course.id}/edit`)}
