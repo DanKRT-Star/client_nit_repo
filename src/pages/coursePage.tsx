@@ -59,7 +59,7 @@ function UpcomingCourse() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-2.5">Upcoming Courses</h2>
+      <h2 className="text-2xl font-bold mb-2.5 text-main">Upcoming Courses</h2>
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-3">
         {upcomingCourses.map((course) => (
           <div
@@ -74,7 +74,7 @@ function UpcomingCourse() {
             />
 
             <article className="px-4 pt-3 pb-4 space-y-2">
-              <h3 className="text-lg font-semibold truncate">{course.title}</h3>
+              <h3 className="text-lg font-semibold truncate text-main">{course.title}</h3>
               <p className="font-semibold text-secondary">{course.instructor}</p>
               <p className="text-sm text-secondary">{course.lessons} lessons</p>
               <button
@@ -102,10 +102,10 @@ function EnrolledCourses() {
   if (isLoading) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-2.5">Recent Enrolled Courses</h2>
+        <h2 className="text-2xl font-bold mb-2.5 text-main">Recent Enrolled Courses</h2>
         <div className="text-center py-8">
-          <AiOutlineLoading3Quarters className="animate-spin inline-block text-3xl mb-2" />
-          <p className="text-gray-500">Loading enrolled courses...</p>
+          <AiOutlineLoading3Quarters className="animate-spin inline-block text-3xl mb-2 text-main" />
+          <p className="text-secondary">Loading enrolled courses...</p>
         </div>
       </div>
     );
@@ -114,13 +114,14 @@ function EnrolledCourses() {
   if (error) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-2.5">Recent Enrolled Courses</h2>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <BiErrorCircle className="inline-block text-red-500 text-4xl mb-2" />
-          <p className="text-red-600 mb-3">{typeof error === 'string' ? error : 'Failed to load enrolled courses'}</p>
+        <h2 className="text-2xl font-bold mb-2.5 text-main">Recent Enrolled Courses</h2>
+        <div className="bg-surface border border-color rounded-lg p-6 text-center">
+          <BiErrorCircle className="inline-block text-4xl mb-2" style={{ color: 'var(--color-danger)' }} />
+          <p className="text-secondary mb-3">{typeof error === 'string' ? error : 'Failed to load enrolled courses'}</p>
           <button
             onClick={() => refetch()}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+            className="px-4 py-2 rounded-lg transition-colors text-sm text-white font-medium"
+            style={{ backgroundColor: 'var(--color-danger)' }}
           >
             Try Again
           </button>
@@ -132,13 +133,13 @@ function EnrolledCourses() {
   if (!enrollments || enrollments.length === 0) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-2.5">Recent Enrolled Courses</h2>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-          <div className="text-gray-300 text-5xl mb-3">📚</div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+        <h2 className="text-2xl font-bold mb-2.5 text-main">Recent Enrolled Courses</h2>
+        <div className="bg-surface border border-color rounded-lg p-8 text-center">
+          <div className="text-5xl mb-3" style={{ color: 'var(--color-info)' }}>📚</div>
+          <h3 className="text-lg font-semibold text-main mb-2">
             No enrolled courses yet
           </h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-secondary mb-4">
             Start learning by enrolling in courses from the available courses section below.
           </p>
         </div>
@@ -151,14 +152,14 @@ function EnrolledCourses() {
   return (
     <div>
       <div className="flex items-center justify-between mb-2.5">
-        <h2 className="text-2xl font-bold">Recent Enrolled Courses</h2>
+        <h2 className="text-2xl font-bold text-main">Recent Enrolled Courses</h2>
         {enrollments.length > 4 && (
           <button
             type="button"
             aria-expanded={showAll}
             aria-controls="enrolled-courses-list"
             onClick={() => setShowAll(!showAll)}
-            className="hover:underline"
+            className="hover:underline text-main"
           >
             {showAll ? "See Less" : "See All"}
           </button>
@@ -177,7 +178,7 @@ function EnrolledCourses() {
             <div
               key={enrollment.id}
               className="bg-background flex gap-5 rounded-md shadow-md overflow-hidden hover:shadow-lg cursor-pointer"
-              onClick={() => navigate(`/student/courses/${course.courseCode}`)}
+              onClick={() => navigate(`/student/courses/${course.id}`)}
             >
               <img
                 loading="lazy"
@@ -187,11 +188,11 @@ function EnrolledCourses() {
               />
 
               <article className="flex-1 flex flex-col justify-evenly">
-                <h3 className="font-semibold line-clamp-1">{course.courseName}</h3>
+                <h3 className="font-semibold line-clamp-1 text-main">{course.courseName}</h3>
                 
                 <p className="font-semibold text-secondary text-sm">{course.lecturer.user.fullName}</p>
 
-                <div className="flex items-center gap-5 text-xs">
+                <div className="flex items-center gap-5 text-xs text-main">
                   <span className='flex items-center gap-1'><FaCalendarAlt className='w-4 h-4'/> {schedule.dayOfWeek}</span>
                   <span className='flex items-center gap-1'><FaClock className='w-4 h-4'/> {schedule.startTime} - {schedule.endTime}</span>
                 </div>
@@ -219,7 +220,6 @@ function AllCourses() {
   const isAuthenticated = !!user;
   const isStudent = user?.role === 'student';
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery.trim());
@@ -228,7 +228,6 @@ function AllCourses() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch function sử dụng courseApi
   const fetchCourses = async ({ pageParam = 1 }) => {
     const response = await courseApi.getCourses({
       search: debouncedSearch,
@@ -236,7 +235,6 @@ function AllCourses() {
       limit: pageLimit,
     });
 
-    // Parse response theo format của API
     let courses: Course[] = [];
     
     if (response.data?.data) {
@@ -255,7 +253,6 @@ function AllCourses() {
     };
   };
 
-  // useInfiniteQuery
   const {
     data,
     isLoading,
@@ -272,7 +269,6 @@ function AllCourses() {
     initialPageParam: 1,
   });
 
-  // Intersection Observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -295,10 +291,8 @@ function AllCourses() {
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  // Flatten all courses
   const allCourses = data?.pages.flatMap((page) => page.courses) ?? [];
 
-  // Handlers
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setDebouncedSearch(searchQuery.trim());
@@ -317,7 +311,7 @@ function AllCourses() {
     <section className="space-y-6">
       {/* Header with Search */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold">All Courses</h2>
+        <h2 className="text-2xl font-bold text-main">All Courses</h2>
         
         <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
@@ -327,14 +321,14 @@ function AllCourses() {
               placeholder="Search courses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-10 pr-4 py-2.5 bg-background border border-color rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-main placeholder:text-secondary"
             />
           </div>
           {searchQuery && (
             <button
               type="button"
               onClick={handleClearSearch}
-              className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2.5 bg-component text-main rounded-lg hover:opacity-80 transition-colors"
             >
               Clear
             </button>
@@ -342,27 +336,53 @@ function AllCourses() {
         </form>
       </div>
 
-      {/* Loading State (Initial) */}
+      {/* Loading State (Initial) - Skeleton Cards */}
       {isLoading && (
-        <div className="text-center py-16">
-          <AiOutlineLoading3Quarters className="animate-spin inline-block text-4xl mb-4" />
-          <p className="text-gray-500 text-lg">Loading courses...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-background border border-color rounded-xl shadow-sm overflow-hidden flex flex-col animate-pulse"
+            >
+              <div className="aspect-video bg-component"></div>
+              <div className="pt-4 px-5 flex flex-col flex-1">
+                <div className="flex-1 space-y-3">
+                  <div className="h-6 bg-component rounded w-3/4"></div>
+                  <div className="h-6 bg-component rounded w-1/2"></div>
+                  <div className="h-4 bg-component rounded w-2/3"></div>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-component rounded w-full"></div>
+                    <div className="h-3 bg-component rounded w-5/6"></div>
+                  </div>
+                </div>
+                <div className="space-y-3 py-5 border-t border-color mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 bg-component rounded w-16"></div>
+                    <div className="h-4 bg-component rounded w-16"></div>
+                    <div className="h-4 bg-component rounded w-16"></div>
+                  </div>
+                  <div className="h-10 bg-component rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Error State */}
       {isError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
-          <BiErrorCircle className="inline-block text-red-500 text-5xl mb-4" />
-          <h3 className="text-lg font-semibold text-red-800 mb-2">
+        <div className="bg-surface border border-color rounded-xl p-8 text-center">
+          <BiErrorCircle className="inline-block text-5xl mb-4" style={{ color: 'var(--color-danger)' }} />
+          <h3 className="text-lg font-semibold mb-2 text-main">
             Failed to load courses
           </h3>
-          <p className="text-red-600 mb-4">
+          <p className="text-secondary mb-4">
             {error instanceof Error ? error.message : 'An error occurred'}
           </p>
           <button
             onClick={() => refetch()}
-            className="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+            className="px-6 py-2.5 rounded-lg transition-colors font-medium text-white"
+            style={{ backgroundColor: 'var(--color-danger)' }}
           >
             Try Again
           </button>
@@ -372,11 +392,11 @@ function AllCourses() {
       {/* Empty State */}
       {!isLoading && !isError && allCourses.length === 0 && (
         <div className="text-center py-16">
-          <div className="text-gray-300 text-7xl mb-4">📚</div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+          <div className="text-7xl mb-4" style={{ color: 'var(--color-info)' }}>📚</div>
+          <h3 className="text-xl font-semibold text-main mb-2">
             No courses found
           </h3>
-          <p className="text-gray-500 mb-6">
+          <p className="text-secondary mb-6">
             {searchQuery 
               ? `No results for "${searchQuery}". Try a different search term.`
               : 'There are no courses available at the moment.'}
@@ -384,7 +404,7 @@ function AllCourses() {
           {searchQuery && (
             <button
               onClick={handleClearSearch}
-              className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              className="px-6 py-2.5 bg-component text-main rounded-lg hover:opacity-80 transition-colors font-medium"
             >
               Clear Search
             </button>
@@ -395,10 +415,12 @@ function AllCourses() {
       {/* Course Grid */}
       {!isLoading && !isError && allCourses.length > 0 && (
         <>
-          {/* Warning for non-students */}
           {!isStudent && isAuthenticated && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full">
+              <span className="text-xs px-3 py-1 rounded-full" style={{ 
+                color: 'var(--color-warning)', 
+                backgroundColor: 'rgba(234, 179, 8, 0.1)' 
+              }}>
                 ℹ️ Only students can enroll in courses
               </span>
             </div>
@@ -420,11 +442,10 @@ function AllCourses() {
               return (
                 <div
                   key={course.courseCode}
-                  className="bg-background border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                  className="bg-background border border-color rounded-xl shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col"
                 >
-                  {/* Thumbnail */}
                   <div 
-                    className="relative aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 cursor-pointer"
+                    className="relative aspect-video bg-surface cursor-pointer"
                     onClick={() => handleViewDetails(course.id)}
                   >
                     <img
@@ -436,22 +457,21 @@ function AllCourses() {
                     
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                     
-                    <span className="absolute top-3 left-3 px-3 py-1 text-xs font-bold rounded-full bg-blue-600 text-white shadow-lg">
+                    <span className="absolute top-3 left-3 px-3 py-1 text-xs font-bold rounded-full text-white shadow-lg" style={{ backgroundColor: 'var(--color-normal)' }}>
                       {course.courseCode}
                     </span>
 
                     {isFull && (
-                      <span className="absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full bg-red-500 text-white shadow-lg">
+                      <span className="absolute top-3 right-3 px-3 py-1 text-xs font-bold rounded-full text-white shadow-lg" style={{ backgroundColor: 'var(--color-danger)' }}>
                         FULL
                       </span>
                     )}
                   </div>
 
-                  {/* Content */}
                   <div className="pt-4 px-5 flex flex-col flex-1">
                     <div className="flex-1">
                       <h3 
-                        className="font-bold text-lg line-clamp-2 mb-2 cursor-pointer"
+                        className="font-bold text-lg line-clamp-2 mb-2 cursor-pointer hover:text-main transition-colors text-main"
                         title={course.courseName}
                         onClick={() => handleViewDetails(course.id)}
                       >
@@ -474,9 +494,8 @@ function AllCourses() {
                       </p>
                     </div>
 
-                    {/* Footer */}
-                    <div className="space-y-3 py-5 border-t">
-                      <div className="flex items-center justify-between text-sm">
+                    <div className="space-y-3 py-5 border-t border-color">
+                      <div className="flex items-center justify-between text-sm text-main">
                         <div className="flex items-center">
                           <MdPlayLesson className="w-5 h-5 mr-1.5" />
                           <span className="font-medium">{course.credits}</span>
@@ -490,7 +509,8 @@ function AllCourses() {
                         </div>
 
                         <div 
-                          className={`flex items-center ${isFull ? 'text-red-600' : ''}`}
+                          className="flex items-center"
+                          style={{ color: isFull ? 'var(--color-danger)' : 'inherit' }}
                           title="Current/Maximum students"
                         >
                           <PiUsersThreeFill className="w-5 h-5 mr-1.5" />
@@ -514,20 +534,42 @@ function AllCourses() {
             })}
           </div>
 
-          {/* Loading More Indicator */}
           {isFetchingNextPage && (
-            <div className="text-center py-8">
-              <AiOutlineLoading3Quarters className="animate-spin inline-block text-3xl mb-2" />
-              <p className="text-gray-500">Loading more courses...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-background border border-color rounded-xl shadow-sm overflow-hidden flex flex-col animate-pulse"
+                >
+                  <div className="aspect-video bg-component"></div>
+                  <div className="pt-4 px-5 flex flex-col flex-1">
+                    <div className="flex-1 space-y-3">
+                      <div className="h-6 bg-component rounded w-3/4"></div>
+                      <div className="h-6 bg-component rounded w-1/2"></div>
+                      <div className="h-4 bg-component rounded w-2/3"></div>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-component rounded w-full"></div>
+                        <div className="h-3 bg-component rounded w-5/6"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-3 py-5 border-t border-color mt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="h-4 bg-component rounded w-16"></div>
+                        <div className="h-4 bg-component rounded w-16"></div>
+                        <div className="h-4 bg-component rounded w-16"></div>
+                      </div>
+                      <div className="h-10 bg-component rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Intersection Observer Target */}
           <div ref={observerTarget} className="h-4" />
 
-          {/* End of List */}
           {!hasNextPage && allCourses.length > 0 && (
-            <div className="text-center py-6 text-gray-500 text-sm border-t">
+            <div className="text-center py-6 text-secondary text-sm border-t border-color">
               <p>🎓 You've reached the end of the course list</p>
             </div>
           )}
@@ -578,10 +620,10 @@ function InstructorList() {
 
   return (
     <aside className="lg:h-full text-xs lg:text-sm">
-      <h2 className="font-semibold text-xl mb-2.5">Instructors</h2>
+      <h2 className="font-semibold text-xl mb-2.5 text-main">Instructors</h2>
       <ul className="flex gap-2 overflow-auto lg:block bg-background shadow-lg rounded-md">
         {instructors.map((ins) => (
-          <li key={ins.id} className="w-1/2 items-center hover:bg-component flex-shrink-0 flex gap-2 px-2 py-1 lg:px-4 lg:py-2 lg:w-full">
+          <li key={ins.id} className="w-1/2 items-center hover:bg-component flex-shrink-0 flex gap-2 px-2 py-1 lg:px-4 lg:py-2 lg:w-full transition-colors">
             <img
               loading="lazy"
               src={ins.avatar}
@@ -589,11 +631,11 @@ function InstructorList() {
               className="h-14 aspect-square rounded-full"
             />
             <article className="instructor-info flex flex-col lg:justify-between">
-              <h4 className="instructor-name">{ins.name}</h4>
-              <p className="instructor-expertise">
+              <h4 className="instructor-name text-main">{ins.name}</h4>
+              <p className="instructor-expertise text-secondary">
                 {ins.expertise.join(", ")}
               </p>
-              <span className="instructor-rating">⭐ {ins.rating}</span>
+              <span className="instructor-rating text-secondary">⭐ {ins.rating}</span>
             </article>
           </li>
         ))}

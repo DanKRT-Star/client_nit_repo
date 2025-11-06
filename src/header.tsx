@@ -30,7 +30,7 @@ export default function Header({ currentPage, onMenuClick }: HeaderProps) {
     }
   };
 
-  const navItems = ['Courses', 'Calendar', 'Assignment', 'Blog'];
+  const navItems = ['Courses', 'Calendar', 'Blog'];
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
